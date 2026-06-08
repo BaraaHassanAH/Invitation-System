@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>نظام الدعوات الإلكترونية</title>
+  <!-- QR Code library - use a reliable CDN version -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<script>
+  if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+    window.location.href = 'index.html';
+  }
+</script>
+
+<!-- Result Overlay -->
+<div class="result-overlay" id="result-overlay" onclick="dismissResult()">
+  <div class="result-card" onclick="event.stopPropagation()">
+    <div class="result-big-icon" id="res-icon">✅</div>
+    <div class="result-status-text ok" id="res-status">تم تسجيل الدخول بنجاح</div>
+    <div class="result-student-name" id="res-name">—</div>
+    <div class="result-student-id" id="res-sid">—</div>
+    <div class="result-inv-badge badge-info" id="res-inv">—</div>
+    <div class="result-time" id="res-time">—</div>
+    <div class="result-code" id="res-code">—</div>
+    <button class="result-dismiss" onclick="dismissResult()">← متابعة المسح</button>
+    <div class="result-auto-bar">
+      <div class="result-auto-fill" id="res-autobar" style="width:100%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="app-header">
+  <div class="header-brand">
+    <div class="header-brand-icon">🎓</div>
+    <div>
+      <h1>نظام الدعوات الإلكترونية</h1>
+      <div class="subtitle">إدارة وتتبع دخول الطلاب بالباركود</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-stats">
+      <div class="header-stat">
+        <div class="val" id="hdr-total">0</div>
+        <div class="lbl">إجمالي الدعوات</div>
+      </div>
+      <div class="header-stat">
+        <div class="val" id="hdr-entered">0</div>
+        <div class="lbl">دخلوا</div>
+      </div>
+      <div class="header-stat">
+        <div class="val" id="hdr-pct">0%</div>
+        <div class="lbl">نسبة الحضور</div>
+      </div>
+    </div>
+    <button class="btn btn-danger"
+      onclick="sessionStorage.removeItem('isLoggedIn'); window.location.href='index.html';"
+      style="padding:9px 14px;">
+      🚪 خروج
+    </button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="showPanel('gen',this)">📋 استيراد وتوليد الدعوات</div>
+  <div class="tab" onclick="showPanel('scan',this)">📷 مسح الباركود</div>
+  <div class="tab" onclick="showPanel('dash',this)">📊 لوحة المتابعة</div>
+</div>
+
+<!-- Main Content -->
+<div class="content">
+
+  <!-- === PANEL: GENERATE === -->
+  <div id="panel-gen" class="panel active">
+
+    <div class="card">
+      <div class="card-title"><span class="step-badge">1</span> تحميل بيانات الطلاب</div>
+      <label for="csv-file" class="upload-area" id="upload-label">
+        <div class="upload-icon">📂</div>
+        <strong>اضغط لرفع ملف CSV</strong>
+        <p>يجب أن يحتوي على أعمدة: <b>رقم الطالب، الاسم</b></p>
+        <input type="file" id="csv-file" accept=".csv,.txt">
+      </label>
+
+      <div class="sample-note">
+        💡 <strong>تجريب النظام:</strong> اضغط زر "بيانات تجريبية" أو أضف يدوياً
+      </div>
+
+      <div class="manual-input">
+        <input type="text" id="inp-id" placeholder="رقم الطالب" style="max-width:140px;flex:none">
+        <input type="text" id="inp-name" placeholder="اسم الطالب">
+        <button class="btn btn-outline" onclick="addManual()">➕ إضافة</button>
+        <button class="btn btn-accent" onclick="loadSample()">📦 بيانات تجريبية</button>
+        <button class="btn btn-danger" onclick="resetSystem()">🗑️ تفريغ الكل</button>
+      </div>
+
+      <div id="students-section" style="display:none">
+        <div class="students-table-wrap">
+          <table id="students-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>رقم الطالب</th>
+                <th>الاسم</th>
+                <th>رمز دعوة 1</th>
+                <th>رمز دعوة 2</th>
+                <th>حذف</th>
+              </tr>
+            </thead>
+            <tbody id="students-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="step-badge">2</span> توليد الدعوات والباركودات</div>
+
+      <div id="gen-idle">
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px">
+          بعد تحميل بيانات الطلاب، اضغط لتوليد الباركودات لجميع الدعوات.
+        </p>
+        <button class="btn btn-primary" onclick="generateAll()">⚡ توليد جميع الباركودات</button>
+      </div>
+
+      <div id="gen-progress" style="display:none">
+        <div class="gen-status" id="gen-status-text">جاري التوليد...</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="gen-pbar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div id="qr-preview" class="qr-preview-grid"></div>
+
+      <div id="gen-actions" style="display:none" class="section-actions">
+        <button class="btn btn-success" onclick="exportCSV()">⬇️ تصدير قاعدة البيانات (CSV)</button>
+        <button class="btn btn-primary" onclick="printInvitations()">🖨️ طباعة / معاينة الدعوات</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- === PANEL: SCAN === -->
+  <div id="panel-scan" class="panel">
+
+    <div class="counter-grid">
+      <div class="counter-card total">
+        <div class="counter-val" id="cnt-total">0</div>
+        <div class="counter-lbl" style="color:var(--primary)">إجمالي الدعوات</div>
+      </div>
+      <div class="counter-card entered">
+        <div class="counter-val" id="cnt-entered">0</div>
+        <div class="counter-lbl" style="color:var(--success)">✅ دخلوا</div>
+      </div>
+      <div class="counter-card remaining">
+        <div class="counter-val" id="cnt-remaining">0</div>
+        <div class="counter-lbl" style="color:var(--danger)">⏳ لم يدخلوا</div>
+      </div>
+    </div>
+
+    <div class="scanner-main">
+      <div class="scanner-box">
+        <div class="card-title">📷 مسح الدعوة</div>
+
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="mode-cam" onclick="setMode('cam')">📷 كاميرا الجوال</button>
+          <button class="mode-btn" id="mode-manual" onclick="setMode('manual')">⌨️ إدخال يدوي</button>
+        </div>
+
+        <div id="cam-section">
+          <div class="camera-wrapper">
+            <div id="reader"></div>
+            <div class="scan-overlay">
+              <div class="scan-frame">
+                <div class="scan-corner sc-tl"></div>
+                <div class="scan-corner sc-tr"></div>
+                <div class="scan-corner sc-bl"></div>
+                <div class="scan-corner sc-br"></div>
+              </div>
+              <div class="scan-hint">وجّه الكاميرا نحو الباركود</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary" id="btn-start-cam" onclick="startCamera()"
+              style="flex:1;justify-content:center">▶ تشغيل الكاميرا</button>
+            <button class="btn btn-danger" id="btn-stop-cam" onclick="stopCamera()"
+              style="display:none;flex:1;justify-content:center">⏹ إيقاف</button>
+          </div>
+          <div id="cam-status" style="margin-top:8px;font-size:12px;color:var(--text-muted);text-align:center">
+            اضغط "تشغيل الكاميرا" للبدء
+          </div>
+        </div>
+
+        <div id="manual-section" style="display:none">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">
+            أدخل رمز الدعوة أو اسحبه من الماسح الضوئي:
+          </p>
+          <input type="text" class="scan-field" id="scan-input"
+            placeholder="INV-XXXX-X-XXXX"
+            oninput="autoScan(this.value)"
+            autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="btn btn-primary"
+            onclick="manualScan()"
+            style="width:100%;margin-top:10px;justify-content:center;padding:14px;font-size:15px">
+            🔍 تحقق من الدعوة
+          </button>
+        </div>
+      </div>
+
+      <div class="scanner-box">
+        <div class="card-title">📜 سجل الدخول الأخير</div>
+        <div class="scan-log" id="scan-log">
+          <div class="empty-state" style="padding:24px">
+            <div class="icon">📋</div>
+            <p>لا توجد عمليات مسح بعد</p>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-outline" onclick="exportScanLog()" style="flex:1;justify-content:center">
+            ⬇️ تصدير السجل
+          </button>
+          <button class="btn btn-danger" onclick="clearLog()" style="padding:10px 14px">🗑️</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === PANEL: DASHBOARD === -->
+  <div id="panel-dash" class="panel">
+    <div class="dash-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="d-students">0</div>
+        <div class="stat-lbl">إجمالي الطلاب</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="d-invitations">0</div>
+        <div class="stat-lbl">إجمالي الدعوات</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--success)">
+        <div class="stat-val" style="color:var(--success)" id="d-entered">0</div>
+        <div class="stat-lbl">✅ دخلوا</div>
+        <div class="stat-sub" id="d-entered-pct">0%</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--danger)">
+        <div class="stat-val" style="color:var(--danger)" id="d-pending">0</div>
+        <div class="stat-lbl">⏳ لم يدخلوا</div>
+        <div class="stat-sub" id="d-pending-pct">100%</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">نسبة الحضور الإجمالية</div>
+        <div style="position:relative;height:220px">
+          <canvas id="chart-donut"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">حركة الدخول خلال الجلسة</div>
+        <div style="position:relative;height:220px">
+          <canvas id="chart-line"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 تفاصيل حالة الدعوات</div>
+      <div class="students-table-wrap" style="max-height:350px;overflow-y:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>رقم الطالب</th>
+              <th>الاسم</th>
+              <th>دعوة 1</th>
+              <th>دعوة 2</th>
+              <th>حالة الحضور</th>
+            </tr>
+          </thead>
+          <tbody id="dash-tbody"></tbody>
+        </table>
+      </div>
+      <div class="section-actions">
+        <button class="btn btn-success" onclick="exportReport()">⬇️ تقرير الحضور</button>
+        <button class="btn btn-outline" onclick="exportAbsent()">⬇️ قائمة الغياب</button>
+        <button class="btn btn-primary" onclick="refreshDash()">🔄 تحديث</button>
+        <button class="btn btn-danger" onclick="resetCheckins()">🔄 صفر الحضور</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Hidden QR generation container -->
+<div id="qr-gen-tmp" style="position:fixed;left:-9999px;top:-9999px;visibility:hidden;"></div>
+
+<script>
+  // ======= STATE =======
+  let students = [], invitations = {}, scanLog = [], entryTimeline = [];
+  let donutChart = null, lineChart = null, html5Qr = null, cameraRunning = false;
+  let autoCloseTimer = null;
+
+  // ======= AUDIO =======
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playBeep(type) {
+    try {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+
+      if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.start();
+        setTimeout(() => { osc.frequency.setValueAtTime(1320, audioCtx.currentTime); }, 80);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+        osc.stop(audioCtx.currentTime + 0.25);
+      } else if (type === 'duplicate') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.35);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+      } else {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        osc.start();
+        setTimeout(() => { osc.frequency.setValueAtTime(120, audioCtx.currentTime); }, 100);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.stop(audioCtx.currentTime + 0.4);
+      }
+    } catch(e) {}
+  }
+
+  // ======= STORAGE =======
+  function saveState() {
+    // لا نحفظ base64 — كبيرة جداً وتُعاد عند التوليد
+    const studentsToSave = students.map(s => ({
+      id: s.id, name: s.name, inv1: s.inv1, inv2: s.inv2
+    }));
+    localStorage.setItem('inv_students', JSON.stringify(studentsToSave));
+    localStorage.setItem('inv_invitations', JSON.stringify(invitations));
+    localStorage.setItem('inv_scanLog', JSON.stringify(scanLog));
+    localStorage.setItem('inv_entryTimeline', JSON.stringify(entryTimeline));
+  }
+
+  function loadState() {
+    try {
+      const ss = localStorage.getItem('inv_students');
+      const si = localStorage.getItem('inv_invitations');
+      const sl = localStorage.getItem('inv_scanLog');
+      const se = localStorage.getItem('inv_entryTimeline');
+      if (ss) students = JSON.parse(ss);
+      if (si) invitations = JSON.parse(si);
+      if (sl) scanLog = JSON.parse(sl);
+      if (se) entryTimeline = JSON.parse(se);
+
+      // ✅ إذا كان الـ invitations فارغاً لكن الطلاب موجودون (مثلاً: استيراد CSV جديد)
+      // نُعيد بناء invitations تلقائياً من الرموز الحتمية
+      if (students.length > 0 && Object.keys(invitations).length === 0) {
+        students.forEach(s => {
+          invitations[s.inv1] = { studentId: s.id, name: s.name, invNum: 1, used: false, usedAt: null };
+          invitations[s.inv2] = { studentId: s.id, name: s.name, invNum: 2, used: false, usedAt: null };
+        });
+      }
+
+      if (students.length > 0) {
+        document.getElementById('students-section').style.display = 'block';
+        renderStudentsTable();
+        if (Object.keys(invitations).length > 0) {
+          document.getElementById('gen-idle').style.display = 'none';
+          document.getElementById('gen-actions').style.display = 'flex';
+          renderQRPlaceholders();
+        }
+      }
+      if (scanLog.length > 0) renderLogFromState();
+      updateHeader();
+    } catch(e) { console.error('loadState error', e); }
+  }
+
+  // ======= TABS =======
+  function showPanel(name, el) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    el.classList.add('active');
+    if (name === 'dash') refreshDash();
+    if (name === 'scan' && document.getElementById('mode-manual').classList.contains('active'))
+      document.getElementById('scan-input').focus();
+    if (name !== 'scan') stopCamera();
+  }
+
+  // ======= MODE TOGGLE =======
+  function setMode(mode) {
+    document.getElementById('mode-cam').classList.toggle('active', mode === 'cam');
+    document.getElementById('mode-manual').classList.toggle('active', mode === 'manual');
+    document.getElementById('cam-section').style.display = mode === 'cam' ? 'block' : 'none';
+    document.getElementById('manual-section').style.display = mode === 'manual' ? 'block' : 'none';
+    if (mode === 'manual') { stopCamera(); document.getElementById('scan-input').focus(); }
+  }
+
+  // ======= CAMERA =======
+  function startCamera() {
+    if (Object.keys(invitations).length === 0) { alert('يجب توليد الدعوات أولاً قبل المسح'); return; }
+    const readerEl = document.getElementById('reader'); readerEl.innerHTML = '';
+    html5Qr = new Html5Qrcode('reader');
+    const config = { fps: 15, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 };
+    html5Qr.start(
+      { facingMode: 'environment' }, config,
+      (decodedText) => { if (!cameraRunning) return; doScan(decodedText.trim()); },
+      () => {}
+    ).then(() => {
+      cameraRunning = true;
+      document.getElementById('btn-start-cam').style.display = 'none';
+      document.getElementById('btn-stop-cam').style.display = 'flex';
+      document.getElementById('cam-status').textContent = 'الكاميرا تعمل — وجّه الباركود داخل الإطار';
+      document.getElementById('cam-status').style.color = 'var(--success)';
+    }).catch(err => {
+      document.getElementById('cam-status').textContent = 'تعذر الوصول للكاميرا: ' + err;
+      document.getElementById('cam-status').style.color = 'var(--danger)';
+    });
+  }
+
+  function stopCamera() {
+    if (html5Qr && cameraRunning) {
+      html5Qr.stop().then(() => {
+        cameraRunning = false;
+        document.getElementById('btn-start-cam').style.display = 'flex';
+        document.getElementById('btn-stop-cam').style.display = 'none';
+        document.getElementById('cam-status').textContent = 'الكاميرا متوقفة';
+        document.getElementById('cam-status').style.color = 'var(--text-muted)';
+      }).catch(() => {});
+    }
+  }
+
+  // ======= SCAN RESULT =======
+  let lastScanCode = '';
+  function showResultOverlay(type, data) {
+    const overlay = document.getElementById('result-overlay');
+    const icons    = { success: '✅', duplicate: '⚠️', invalid: '❌' };
+    const statusTx = { success: 'تم تسجيل الدخول بنجاح!', duplicate: 'هذه الدعوة مستخدمة مسبقاً!', invalid: 'باركود غير صالح!' };
+    const statusCls = { success: 'ok', duplicate: 'dup', invalid: 'bad' };
+    const overlayC  = { success: 'success-ov', duplicate: 'duplicate-ov', invalid: 'invalid-ov' };
+
+    document.getElementById('res-icon').textContent = icons[type];
+    const stEl = document.getElementById('res-status');
+    stEl.textContent = statusTx[type]; stEl.className = 'result-status-text ' + statusCls[type];
+
+    if (type !== 'invalid') {
+      document.getElementById('res-name').textContent = data.name;
+      document.getElementById('res-sid').textContent = 'رقم الطالب: ' + data.studentId;
+      const invEl = document.getElementById('res-inv');
+      invEl.textContent = 'دعوة ' + (data.invNum === 1 ? 'الأولى' : 'الثانية');
+      invEl.className = 'result-inv-badge ' + (data.invNum === 1 ? 'badge-info' : 'badge-success');
+      document.getElementById('res-time').textContent = type === 'duplicate'
+        ? 'سبق دخوله في: ' + data.usedAt
+        : 'وقت الدخول: ' + new Date().toLocaleTimeString('ar-SA');
+    } else {
+      document.getElementById('res-name').textContent = 'رمز غير معرّف';
+      document.getElementById('res-sid').textContent = '';
+      document.getElementById('res-inv').textContent = '';
+      document.getElementById('res-time').textContent = '';
+    }
+    document.getElementById('res-code').textContent = lastScanCode;
+    overlay.className = 'result-overlay show ' + overlayC[type];
+
+    const bar = document.getElementById('res-autobar');
+    bar.style.transition = 'none'; bar.style.width = '100%';
+    setTimeout(() => { bar.style.transition = 'width 3s linear'; bar.style.width = '0%'; }, 50);
+    clearTimeout(autoCloseTimer);
+    autoCloseTimer = setTimeout(() => dismissResult(), 3000);
+  }
+
+  function dismissResult() {
+    clearTimeout(autoCloseTimer);
+    document.getElementById('result-overlay').className = 'result-overlay';
+    if (!cameraRunning && document.getElementById('mode-manual').classList.contains('active')) {
+      const inp = document.getElementById('scan-input'); inp.value = ''; inp.focus();
+    }
+  }
+
+  // ======= SCAN LOGIC =======
+  let lastScanned = '', lastScanTime = 0;
+  function doScan(code) {
+    const now = Date.now();
+    if (code === lastScanned && now - lastScanTime < 2000) return;
+    lastScanned = code; lastScanTime = now; lastScanCode = code;
+    const timeStr = new Date().toLocaleTimeString('ar-SA');
+
+    if (!invitations[code]) {
+      playBeep('invalid'); showResultOverlay('invalid', {}); addLog(code, 'باركود غير صالح', '—', 'bad', timeStr);
+    } else if (invitations[code].used) {
+      playBeep('duplicate'); showResultOverlay('duplicate', invitations[code]); addLog(code, 'مكرر', invitations[code].name, 'dup', timeStr);
+    } else {
+      playBeep('success'); invitations[code].used = true; invitations[code].usedAt = timeStr;
+      entryTimeline.push({ time: timeStr, count: Object.values(invitations).filter(i => i.used).length });
+      showResultOverlay('success', invitations[code]); addLog(code, 'دخول مؤكد', invitations[code].name, 'ok', timeStr);
+      updateHeader(); saveState();
+    }
+  }
+
+  let scanTimeout = null;
+  function autoScan(val) {
+    clearTimeout(scanTimeout);
+    if (val.length >= 10) scanTimeout = setTimeout(() => doScan(val.trim()), 400);
+  }
+  function manualScan() {
+    const val = document.getElementById('scan-input').value.trim();
+    if (val) doScan(val);
+  }
+
+  function addLog(code, status, name, type, time) {
+    const logEl = document.getElementById('scan-log');
+    const es = logEl.querySelector('.empty-state'); if (es) es.remove();
+    const icons = { ok: '✅', dup: '⚠️', bad: '❌' };
+    const item = document.createElement('div'); item.className = 'log-item ' + type;
+    item.innerHTML = `<span>${icons[type]}</span>
+      <span style="font-weight:600;flex:1">${name !== '—' ? name : code.substring(0,16)}</span>
+      <span class="badge badge-${type==='ok'?'success':type==='dup'?'warning':'danger'}">${status}</span>
+      <span class="log-time">${time}</span>`;
+    logEl.insertBefore(item, logEl.firstChild);
+    scanLog.unshift({ code, status, name, type, time });
+  }
+
+  function clearLog() {
+    if (!confirm('مسح سجل الدخول؟')) return;
+    document.getElementById('scan-log').innerHTML =
+      '<div class="empty-state" style="padding:24px"><div class="icon">📋</div><p>لا توجد عمليات مسح بعد</p></div>';
+    scanLog = []; saveState();
+  }
+
+  // ======= STUDENTS =======
+  /**
+   * رمز حتمي وثابت (Deterministic):
+   * نفس رقم الطالب + نفس رقم الدعوة = نفس الرمز دائماً على أي جهاز.
+   * خوارزمية djb2 hash — سريعة، بسيطة، بدون مكتبات خارجية.
+   * مثال: genCode('1001', 1) → 'INV-1001-1-AA8D' في كل مكان
+   */
+  function genCode(studentId, num) {
+    const seed = String(studentId) + '::INV::' + num; // seed مميز لكل دعوة
+    let hash = 5381;
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) + hash) + seed.charCodeAt(i);
+      hash = hash & 0xFFFFFFFF; // ثبّت عند 32-bit
+    }
+    const suffix = (Math.abs(hash) >>> 0).toString(16).toUpperCase().padStart(8,'0').slice(-4);
+    return `INV-${String(studentId).padStart(4,'0')}-${num}-${suffix}`;
+  }
+
+  function updateHeader() {
+    const total = Object.keys(invitations).length;
+    const entered = Object.values(invitations).filter(i => i.used).length;
+    const pct = total > 0 ? Math.round(entered / total * 100) : 0;
+    document.getElementById('hdr-total').textContent = total.toLocaleString('ar');
+    document.getElementById('hdr-entered').textContent = entered.toLocaleString('ar');
+    document.getElementById('hdr-pct').textContent = pct + '%';
+    document.getElementById('cnt-total').textContent = total.toLocaleString('ar');
+    document.getElementById('cnt-entered').textContent = entered.toLocaleString('ar');
+    document.getElementById('cnt-remaining').textContent = (total - entered).toLocaleString('ar');
+  }
+
+  function loadSample() {
+    const s = [
+      { id:'1001', name:'أحمد محمد الغامدي' }, { id:'1002', name:'سارة عبدالله الزهراني' },
+      { id:'1003', name:'خالد إبراهيم العمري' }, { id:'1004', name:'نورة سعد القحطاني' },
+      { id:'1005', name:'عمر علي الشهري'   }, { id:'1006', name:'ريم فهد الدوسري'    },
+      { id:'1007', name:'محمد عبدالرحمن الحربي' }, { id:'1008', name:'لمى يوسف المالكي' },
+    ];
+    s.forEach(x => addStudent(x.id, x.name, false)); saveState();
+  }
+
+  function addManual() {
+    const id = document.getElementById('inp-id').value.trim();
+    const name = document.getElementById('inp-name').value.trim();
+    if (!id || !name) { alert('أدخل رقم الطالب والاسم'); return; }
+    addStudent(id, name, true);
+    document.getElementById('inp-id').value = '';
+    document.getElementById('inp-name').value = '';
+  }
+
+  function addStudent(id, name, shouldSave = true) {
+    if (students.find(s => s.id === id)) { alert('الرقم موجود: ' + id); return; }
+    const inv1 = genCode(id, 1), inv2 = genCode(id, 2);
+    students.push({ id, name, inv1, inv2 });
+    // ✅ سجّل الرموز فوراً في خريطة الدعوات
+    if (!invitations[inv1]) invitations[inv1] = { studentId: id, name, invNum: 1, used: false, usedAt: null };
+    if (!invitations[inv2]) invitations[inv2] = { studentId: id, name, invNum: 2, used: false, usedAt: null };
+    renderStudentsTable();
+    document.getElementById('students-section').style.display = 'block';
+    if (shouldSave) saveState();
+  }
+
+  function removeStudent(i) {
+    const s = students[i];
+    delete invitations[s.inv1]; delete invitations[s.inv2];
+    students.splice(i, 1); renderStudentsTable(); updateHeader(); saveState();
+  }
+
+  function renderStudentsTable() {
+    document.getElementById('students-tbody').innerHTML = students.map((s, i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td><span class="badge badge-info">${s.id}</span></td>
+        <td><strong>${s.name}</strong></td>
+        <td style="font-size:10px;font-family:monospace;color:var(--text-muted)">${s.inv1||'—'}</td>
+        <td style="font-size:10px;font-family:monospace;color:var(--text-muted)">${s.inv2||'—'}</td>
+        <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="removeStudent(${i})">🗑️</button></td>
+      </tr>`).join('');
+  }
+
+  document.getElementById('csv-file').addEventListener('change', function(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const lines = ev.target.result.split('\n').filter(l => l.trim()); let count = 0;
+      lines.forEach((line, i) => {
+        if (i === 0) return;
+        const parts = parseCSVLine(line);
+        if (parts.length >= 2 && parts[0] && parts[1]) { addStudent(parts[0], parts[1], false); count++; }
+      });
+      saveState(); alert(`تم استيراد ${count} طالب`);
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+
+  function parseCSVLine(line) {
+    const result = []; let current = ''; let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') { inQuotes = !inQuotes; }
+      else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+      else { current += char; }
+    }
+    result.push(current.trim()); return result;
+  }
+
+  // ======= RESET =======
+  function resetSystem() {
+    if (!confirm('هل أنت متأكد من تفريغ كافة البيانات والباركودات وسجل الدخول؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    students = []; invitations = {}; scanLog = []; entryTimeline = []; localStorage.clear();
+    document.getElementById('students-section').style.display = 'none';
+    document.getElementById('students-tbody').innerHTML = '';
+    document.getElementById('qr-preview').innerHTML = '';
+    document.getElementById('gen-idle').style.display = 'block';
+    document.getElementById('gen-actions').style.display = 'none';
+    document.getElementById('gen-progress').style.display = 'none';
+    document.getElementById('gen-pbar').style.width = '0%';
+    document.getElementById('scan-log').innerHTML =
+      '<div class="empty-state" style="padding:24px"><div class="icon">📋</div><p>لا توجد عمليات مسح بعد</p></div>';
+    updateHeader();
+    if (donutChart) donutChart.destroy();
+    if (lineChart) lineChart.destroy();
+    renderDonut(0, 1); renderLine();
+    alert('تم تفريغ النظام بالكامل.');
+  }
+
+  function resetCheckins() {
+    if (!confirm('هل أنت متأكد من إعادة ضبط حالة جميع الحضور إلى "لم يدخل"؟')) return;
+    Object.keys(invitations).forEach(code => { invitations[code].used = false; invitations[code].usedAt = null; });
+    scanLog = []; entryTimeline = []; saveState();
+    document.getElementById('scan-log').innerHTML =
+      '<div class="empty-state" style="padding:24px"><div class="icon">📋</div><p>لا توجد عمليات مسح بعد</p></div>';
+    refreshDash(); alert('تم إعادة ضبط حضور الجميع بنجاح.');
+  }
+
+  // ======= QR GENERATION (FIXED) =======
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  /**
+   * FIX: The QRCode library (qrcodejs) generates a canvas element first,
+   * then asynchronously converts it to an img. This function uses a more
+   * reliable approach: create QR in offscreen div, wait for canvas, 
+   * extract from canvas directly using toDataURL().
+   */
+  async function generateQRBase64(text) {
+    return new Promise((resolve) => {
+      const container = document.createElement('div');
+      container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+      document.body.appendChild(container);
+
+      try {
+        new QRCode(container, {
+          text: text,
+          width: 200,
+          height: 200,
+          colorDark: '#1a3a8f',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch(e) {
+        document.body.removeChild(container);
+        resolve('');
+        return;
+      }
+
+      // QRCode library creates the canvas synchronously in modern browsers,
+      // but may also create an img after. Check for canvas first.
+      let attempts = 0;
+      const check = () => {
+        attempts++;
+        const canvas = container.querySelector('canvas');
+        const img = container.querySelector('img');
+
+        if (canvas) {
+          try {
+            const dataURL = canvas.toDataURL('image/png');
+            document.body.removeChild(container);
+            resolve(dataURL);
+            return;
+          } catch(e) {}
+        }
+
+        if (img && img.src && img.src.startsWith('data:image')) {
+          document.body.removeChild(container);
+          resolve(img.src);
+          return;
+        }
+
+        if (attempts < 50) {
+          setTimeout(check, 20);
+        } else {
+          document.body.removeChild(container);
+          resolve('');
+        }
+      };
+
+      // Small delay to let QRCode render
+      setTimeout(check, 10);
+    });
+  }
+
+  async function generateAll() {
+    if (students.length === 0) { alert('أضف طلاباً أولاً'); return; }
+
+    document.getElementById('gen-idle').style.display = 'none';
+    document.getElementById('gen-progress').style.display = 'block';
+    document.getElementById('qr-preview').innerHTML = '';
+
+    // ✅ لا نمسح invitations — نحتفظ بحالة الحضور الموجودة
+    // فقط نضيف الرموز الجديدة إذا لم تكن موجودة
+    const total = students.length * 2;
+    let done = 0;
+
+    for (const s of students) {
+      for (const num of [1, 2]) {
+        const code = s['inv' + num];
+        // أضف للخريطة فقط إذا لم يكن موجوداً (لحفظ حالة used)
+        if (!invitations[code]) {
+          invitations[code] = {
+            studentId: s.id,
+            name: s.name,
+            invNum: num,
+            used: false,
+            usedAt: null
+          };
+        }
+
+        // Generate QR
+        const base64 = await generateQRBase64(code);
+        s['qr' + num + '_base64'] = base64;
+
+        // Build card
+        const card = document.createElement('div');
+        card.className = 'qr-card';
+
+        if (base64) {
+          const img = document.createElement('img');
+          img.src = base64;
+          img.alt = 'QR ' + code;
+          card.appendChild(img);
+        } else {
+          // Fallback placeholder
+          const ph = document.createElement('div');
+          ph.style.cssText = 'width:114px;height:114px;background:#f1f5f9;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8;border-radius:6px;margin:0 auto 8px;text-align:center;';
+          ph.textContent = 'تعذّر التوليد';
+          card.appendChild(ph);
+        }
+
+        const nameDiv = document.createElement('div'); nameDiv.className = 'name'; nameDiv.textContent = s.name;
+        const idDiv   = document.createElement('div'); idDiv.className = 'inv-id'; idDiv.textContent = code;
+        const bwrap   = document.createElement('div'); bwrap.style.cssText = 'font-size:10px;margin-top:4px';
+        const badge   = document.createElement('span');
+        badge.className = 'badge badge-' + (num === 1 ? 'info' : 'success');
+        badge.textContent = 'دعوة ' + (num === 1 ? 'الأولى' : 'الثانية');
+        bwrap.appendChild(badge);
+
+        card.appendChild(nameDiv); card.appendChild(idDiv); card.appendChild(bwrap);
+        document.getElementById('qr-preview').appendChild(card);
+
+        done++;
+        const pct = Math.round(done / total * 100);
+        document.getElementById('gen-pbar').style.width = pct + '%';
+        document.getElementById('gen-status-text').textContent =
+          `جاري التوليد... ${done}/${total} (${pct}%)`;
+      }
+      // Yield to browser every student to keep UI responsive
+      await sleep(5);
+    }
+
+    document.getElementById('gen-status-text').textContent =
+      `✅ تم توليد ${total} باركود لـ ${students.length} طالب بنجاح`;
+    document.getElementById('gen-actions').style.display = 'flex';
+    updateHeader(); saveState();
+  }
+
+  // Show placeholders (when loaded from localStorage without base64)
+  function renderQRPlaceholders() {
+    const previewEl = document.getElementById('qr-preview');
+    previewEl.innerHTML = '';
+    students.forEach(s => {
+      [1, 2].forEach(num => {
+        const code = s['inv' + num];
+        const card = document.createElement('div'); card.className = 'qr-card';
+
+        // Try to show saved base64, fallback to placeholder
+        const b64 = s['qr' + num + '_base64'];
+        if (b64) {
+          const img = document.createElement('img'); img.src = b64; img.alt = code;
+          card.appendChild(img);
+        } else {
+          const ph = document.createElement('div');
+          ph.style.cssText = 'width:114px;height:114px;background:#f1f5f9;border:1px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8;border-radius:6px;margin:0 auto 8px;text-align:center;padding:8px;';
+          ph.textContent = '⚡ اضغط توليد لإعادة إنشاء الباركود';
+          card.appendChild(ph);
+        }
+
+        const nameDiv = document.createElement('div'); nameDiv.className = 'name'; nameDiv.textContent = s.name;
+        const idDiv   = document.createElement('div'); idDiv.className = 'inv-id'; idDiv.textContent = code;
+        const bwrap   = document.createElement('div'); bwrap.style.cssText = 'font-size:10px;margin-top:4px';
+        const badge   = document.createElement('span');
+        badge.className = 'badge badge-' + (num === 1 ? 'info' : 'success');
+        badge.textContent = 'دعوة ' + (num === 1 ? 'الأولى' : 'الثانية');
+        bwrap.appendChild(badge);
+        card.appendChild(nameDiv); card.appendChild(idDiv); card.appendChild(bwrap);
+        previewEl.appendChild(card);
+      });
+    });
+  }
+
+  function renderLogFromState() {
+    const logEl = document.getElementById('scan-log'); logEl.innerHTML = '';
+    const icons = { ok: '✅', dup: '⚠️', bad: '❌' };
+    scanLog.slice().reverse().forEach(l => {
+      const item = document.createElement('div'); item.className = 'log-item ' + l.type;
+      item.innerHTML = `<span>${icons[l.type]||'🔍'}</span>
+        <span style="font-weight:600;flex:1">${l.name!=='—'?l.name:l.code.substring(0,16)}</span>
+        <span class="badge badge-${l.type==='ok'?'success':l.type==='dup'?'warning':'danger'}">${l.status}</span>
+        <span class="log-time">${l.time}</span>`;
+      logEl.appendChild(item);
+    });
+  }
+
+  // ======= DASHBOARD =======
+  function refreshDash() {
+    const total = students.length, totalInv = Object.keys(invitations).length;
+    const entered = Object.values(invitations).filter(i => i.used).length;
+    const pending = totalInv - entered;
+    const pct = totalInv > 0 ? Math.round(entered / totalInv * 100) : 0;
+    document.getElementById('d-students').textContent = total.toLocaleString('ar');
+    document.getElementById('d-invitations').textContent = totalInv.toLocaleString('ar');
+    document.getElementById('d-entered').textContent = entered.toLocaleString('ar');
+    document.getElementById('d-entered-pct').textContent = pct + '%';
+    document.getElementById('d-pending').textContent = pending.toLocaleString('ar');
+    document.getElementById('d-pending-pct').textContent = (100 - pct) + '%';
+    renderDonut(entered, pending); renderLine(); renderDashTable(); updateHeader();
+  }
+
+  function renderDonut(e, p) {
+    const ctx = document.getElementById('chart-donut').getContext('2d');
+    if (donutChart) donutChart.destroy();
+    donutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['دخلوا', 'لم يدخلوا'],
+        datasets: [{ data: [e||0, p||1], backgroundColor: ['#059669','#dc2626'], borderWidth: 3, borderColor: '#fff' }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom', labels: { font: { family: 'IBM Plex Sans Arabic', size: 12 } } } }, cutout: '62%' }
+    });
+  }
+
+  function renderLine() {
+    const ctx = document.getElementById('chart-line').getContext('2d');
+    if (lineChart) lineChart.destroy();
+    const labels = entryTimeline.length > 0 ? entryTimeline.map((_, i) => i+1) : [0];
+    const data   = entryTimeline.length > 0 ? entryTimeline.map(e => e.count) : [0];
+    lineChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'تراكم الدخول', data, borderColor: '#1a56db', backgroundColor: 'rgba(26,86,219,0.08)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#1a56db' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { display: false } } }
+    });
+  }
+
+  function renderDashTable() {
+    document.getElementById('dash-tbody').innerHTML = students.map(s => {
+      const i1 = invitations[s.inv1], i2 = invitations[s.inv2];
+      const u1 = i1 && i1.used, u2 = i2 && i2.used;
+      return `<tr>
+        <td><span class="badge badge-info">${s.id}</span></td>
+        <td><strong>${s.name}</strong></td>
+        <td><span class="badge ${u1?'badge-success':'badge-danger'}">${u1?'✅ دخل':'⏳ لم يدخل'}</span>${u1?`<br><span style="font-size:10px;color:var(--text-muted)">${i1.usedAt}</span>`:''}</td>
+        <td><span class="badge ${u2?'badge-success':'badge-danger'}">${u2?'✅ دخل':'⏳ لم يدخل'}</span>${u2?`<br><span style="font-size:10px;color:var(--text-muted)">${i2.usedAt}</span>`:''}</td>
+        <td><span class="badge ${u1&&u2?'badge-success':!u1&&!u2?'badge-danger':'badge-warning'}">${u1&&u2?'دخل بالدعوتين':!u1&&!u2?'غائب':'دخل بدعوة واحدة'}</span></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">لا توجد بيانات</td></tr>';
+  }
+
+  // ======= EXPORT =======
+  function dl(content, name, type) {
+    const b = new Blob([content], { type });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click();
+  }
+  function exportCSV() {
+    let c = '\uFEFF' + 'رقم الطالب,الاسم,رمز دعوة 1,رمز دعوة 2\n';
+    students.forEach(s => c += `${s.id},${s.name},${s.inv1},${s.inv2}\n`);
+    dl(c, 'invitations.csv', 'text/csv;charset=utf-8');
+  }
+  function exportReport() {
+    let c = '\uFEFF' + 'رقم الطالب,الاسم,دعوة 1,وقت الدخول 1,دعوة 2,وقت الدخول 2,الحضور\n';
+    students.forEach(s => {
+      const i1 = invitations[s.inv1], i2 = invitations[s.inv2];
+      const u1 = i1&&i1.used, u2 = i2&&i2.used;
+      c += `${s.id},${s.name},${u1?'دخل':'لم يدخل'},${u1?i1.usedAt:''},${u2?'دخل':'لم يدخل'},${u2?i2.usedAt:''},${u1&&u2?'دخل بالدعوتين':u1||u2?'دخل بدعوة واحدة':'غائب'}\n`;
+    });
+    dl(c, 'report.csv', 'text/csv;charset=utf-8');
+  }
+  function exportAbsent() {
+    let c = '\uFEFF' + 'رقم الطالب,الاسم,رمز دعوة 1,رمز دعوة 2\n';
+    students.filter(s => !(invitations[s.inv1]&&invitations[s.inv1].used) && !(invitations[s.inv2]&&invitations[s.inv2].used))
+      .forEach(s => c += `${s.id},${s.name},${s.inv1},${s.inv2}\n`);
+    dl(c, 'absent.csv', 'text/csv;charset=utf-8');
+  }
+  function exportScanLog() {
+    let c = '\uFEFF' + 'الاسم,رمز الدعوة,الحالة,الوقت\n';
+    scanLog.forEach(l => c += `${l.name},${l.code},${l.status},${l.time}\n`);
+    dl(c, 'scan_log.csv', 'text/csv;charset=utf-8');
+  }
+
+  function printInvitations() {
+    if (!students.length) { alert('لا توجد بيانات'); return; }
+    const w = window.open('', '_blank');
+    let h = `<html dir="rtl"><head><meta charset="UTF-8"><title>الدعوات المطبوعة</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap');
+      body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;direction:rtl;background:#fff;padding:20px;margin:0}
+      .inv{border:2px solid #1a3a8f;border-radius:12px;padding:20px;margin:12px;display:inline-block;width:260px;vertical-align:top;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.08);background:#fff}
+      h3{color:#1a3a8f;margin:0 0 3px;font-size:17px;font-weight:700}
+      .sid{font-size:12px;color:#64748b;margin-bottom:10px}
+      .qr-wrap{width:140px;height:140px;border:1px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;margin:10px auto;background:#f8fafc;padding:6px}
+      .qr-wrap img{width:128px;height:128px}
+      .code{font-family:monospace;font-size:10px;color:#94a3b8;margin-top:6px;letter-spacing:1px}
+      .num{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;margin-top:6px}
+      .n1{background:#eff6ff;color:#1a3a8f} .n2{background:#ecfdf5;color:#059669}
+      @media print{.inv{page-break-inside:avoid;box-shadow:none}}
+    </style></head><body>`;
+
+    students.forEach(s => [1,2].forEach(n => {
+      const qrSrc = s['qr' + n + '_base64'];
+      h += `<div class="inv">
+        <h3>${s.name}</h3>
+        <p class="sid">رقم الطالب: ${s.id}</p>
+        <div class="qr-wrap">
+          ${qrSrc ? `<img src="${qrSrc}" alt="QR">` : `<div style="font-size:10px;color:#aaa;text-align:center">الباركود غير متوفر<br>يرجى التوليد أولاً</div>`}
+        </div>
+        <div class="code">${s['inv'+n]}</div>
+        <div class="num ${n===1?'n1':'n2'}">دعوة ${n===1?'الأولى':'الثانية'}</div>
+      </div>`;
+    }));
+    h += `</body></html>`;
+    w.document.write(h); w.document.close();
+    setTimeout(() => { w.print(); }, 300);
+  }
+
+  // ======= INIT =======
+  loadState();
+  if (Object.keys(invitations).length === 0) { renderDonut(0, 1); renderLine(); }
+</script>
+</body>
+</html>
