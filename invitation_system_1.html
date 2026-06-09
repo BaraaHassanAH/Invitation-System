@@ -176,13 +176,19 @@
             </div>
 
             <div id="cam-section" class="scan-area">
+              <div id="cam-status"
+                style="text-align: center; margin-bottom: 10px; font-weight: bold; color: var(--text-muted);">الكاميرا
+                متوقفة</div>
+
               <div id="reader"
                 style="width: 100%; max-width: 420px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #f8fafc;">
               </div>
+
               <div class="cam-actions"
                 style="text-align:center; margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
-                <button class="btn btn-success" onclick="startCamera()">▶️ تشغيل الكاميرا</button>
-                <button class="btn btn-danger" onclick="stopCamera()">⏹️ إيقاف الكاميرا</button>
+                <button id="btn-start-cam" class="btn btn-success" onclick="startCamera()">▶️ تشغيل الكاميرا</button>
+                <button id="btn-stop-cam" class="btn btn-danger" style="display: none;" onclick="stopCamera()">⏹️ إيقاف
+                  الكاميرا</button>
               </div>
             </div>
 
@@ -209,7 +215,7 @@
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;">
 
-          <button class="btn btn-primary" onclick="addStudent()">
+          <button class="btn btn-primary" onclick="addManual()">
             ➕ إضافة طالب جديد
           </button>
 
@@ -217,11 +223,11 @@
             📂 استيراد CSV
           </button>
 
-          <button class="btn btn-secondary" onclick="loadDemoData()">
+          <button class="btn btn-secondary" onclick="loadSample()">
             🧪 تحميل بيانات تجريبية
           </button>
 
-          <button class="btn btn-success" onclick="exportStudentsCSV()">
+          <button class="btn btn-success" onclick="exportCSV()">
             📄 تصدير CSV
           </button>
 
