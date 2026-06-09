@@ -6,7 +6,7 @@
 const SUPABASE_URL = "https://gpaqcfhswfnudpqlxcfs.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_WiQrWKnOxv0RZKLVgFChXQ_1Sb2LRRq";
 
-const supabase = (window.supabase && window.supabase.createClient)
+const supabaseClient = (window.supabase && window.supabase.createClient)
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
 
@@ -86,16 +86,16 @@ function genCode(studentId, num) {
 
 // ======= تحميل البيانات من Supabase =======
 async function loadState() {
-    if (!supabase) {
+    if (!supabaseClient) {
         console.warn('Supabase غير مُهيَّأ');
         return;
     }
     try {
-        const { data: dbStudents, error: errS } = await supabase
+        const { data: dbStudents, error: errS } = await supabaseClient
             .from('students').select('*').order('created_at', { ascending: true });
         if (errS) throw errS;
 
-        const { data: dbInvitations, error: errI } = await supabase
+        const { data: dbInvitations, error: errI } = await supabaseClient
             .from('invitations').select('*');
         if (errI) throw errI;
 
@@ -245,13 +245,13 @@ async function doScan(code) {
 
     const timeStr = new Date().toLocaleTimeString('ar-SA');
 
-    if (!supabase) {
+    if (!supabaseClient) {
         alert('لا يوجد اتصال بقاعدة البيانات');
         return;
     }
 
     try {
-        const { data: invData, error } = await supabase
+        const { data: invData, error } = await supabaseClient
             .from('invitations')
             .select('*, students(name)')
             .eq('code', code)
@@ -284,7 +284,7 @@ async function doScan(code) {
 
         } else {
             const isoNow = new Date().toISOString();
-            const { error: updErr } = await supabase
+            const { error: updErr } = await supabaseClient
                 .from('invitations')
                 .update({ used: true, used_at: isoNow })
                 .eq('code', code);
@@ -520,7 +520,7 @@ function renderQRPlaceholders() {
 
 // ======= لوحة التحكم (Dashboard) =======
 window.refreshDash = async function () {
-    if (supabase) await loadState();
+    if (supabaseClient) await loadState();
 
     const total = students.length;
     const totalInv = Object.keys(invitations).length;
@@ -655,11 +655,11 @@ async function addStudent(id, name, shouldSave = true) {
     const inv1 = genCode(id, 1);
     const inv2 = genCode(id, 2);
 
-    if (shouldSave && supabase) {
+    if (shouldSave && supabaseClient) {
         try {
-            const { error: errS } = await supabase.from('students').insert([{ id, name }]);
+            const { error: errS } = await supabaseClient.from('students').insert([{ id, name }]);
             if (errS) throw errS;
-            const { error: errI } = await supabase.from('invitations').insert([
+            const { error: errI } = await supabaseClient.from('invitations').insert([
                 { code: inv1, student_id: id, inv_num: 1, used: false },
                 { code: inv2, student_id: id, inv_num: 2, used: false }
             ]);
@@ -686,9 +686,9 @@ window.removeStudent = async function (i) {
     if (!s) return;
     if (!confirm(`هل أنت متأكد من حذف "${s.name}" وجميع دعواته؟`)) return;
 
-    if (supabase) {
+    if (supabaseClient) {
         try {
-            const { error } = await supabase.from('students').delete().eq('id', s.id);
+            const { error } = await supabaseClient.from('students').delete().eq('id', s.id);
             if (error) throw error;
         } catch (e) {
             alert('تعذر الحذف من الخادم: ' + (e.message || e));
@@ -724,7 +724,7 @@ function parseCSVLine(line) {
 }
 
 window.loadSample = async function () {
-    if (!supabase) return;
+    if (!supabaseClient) return;
     const sampleData = [
         { id: '1001', name: 'أحمد محمد الغامدي' },
         { id: '1002', name: 'سارة عبدالله الزهراني' },
@@ -749,8 +749,8 @@ window.loadSample = async function () {
     if (toInsertS.length === 0) { alert('البيانات التجريبية موجودة بالفعل.'); return; }
 
     try {
-        await supabase.from('students').insert(toInsertS);
-        await supabase.from('invitations').insert(toInsertI);
+        await supabaseClient.from('students').insert(toInsertS);
+        await supabaseClient.from('invitations').insert(toInsertI);
         await loadState();
         alert(`تم تحميل ${toInsertS.length} طالب تجريبي بنجاح!`);
     } catch (e) { alert('خطأ في تحميل البيانات التجريبية: ' + (e.message || e)); }
@@ -786,10 +786,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (toInsertS.length === 0) { alert('لم يتم العثور على بيانات جديدة في الملف.'); csvInput.value = ''; return; }
 
-            if (supabase) {
+            if (supabaseClient) {
                 try {
-                    await supabase.from('students').insert(toInsertS);
-                    await supabase.from('invitations').insert(toInsertI);
+                    await supabaseClient.from('students').insert(toInsertS);
+                    await supabaseClient.from('invitations').insert(toInsertI);
                     await loadState();
                     alert(`تم استيراد ${toInsertS.length} طالب بنجاح!`);
                 } catch (e) { alert('خطأ أثناء الرفع: ' + (e.message || e)); }
@@ -804,10 +804,10 @@ document.addEventListener('DOMContentLoaded', () => {
 window.resetSystem = async function () {
     if (!confirm('⚠️ تحذير: سيتم حذف كافة البيانات نهائياً من السحاب. لا يمكن التراجع! هل أنت متأكد؟')) return;
 
-    if (supabase && students.length > 0) {
+    if (supabaseClient && students.length > 0) {
         try {
             const ids = students.map(s => s.id);
-            await supabase.from('students').delete().in('id', ids);
+            await supabaseClient.from('students').delete().in('id', ids);
         } catch (e) { console.error('فشل المسح من الخادم:', e); }
     }
 
@@ -835,9 +835,9 @@ window.resetSystem = async function () {
 window.resetCheckins = async function () {
     if (!confirm('هل أنت متأكد من تصفير حالة الحضور لجميع الدعوات؟')) return;
 
-    if (supabase) {
+    if (supabaseClient) {
         try {
-            const { error } = await supabase.from('invitations').update({ used: false, used_at: null }).neq('code', '');
+            const { error } = await supabaseClient.from('invitations').update({ used: false, used_at: null }).neq('code', '');
             if (error) throw error;
         } catch (e) { alert('فشل تصفير الحضور: ' + (e.message || e)); return; }
     }
