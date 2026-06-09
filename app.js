@@ -3,7 +3,7 @@
    ===================================================== */
 
 // ======= إعدادات Supabase =======
-const SUPABASE_URL      = "https://gpaqcfhswfnudpqlxcfs.supabase.co";
+const SUPABASE_URL = "https://gpaqcfhswfnudpqlxcfs.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_WiQrWKnOxv0RZKLVgFChXQ_1Sb2LRRq";
 
 const supabase = (window.supabase && window.supabase.createClient)
@@ -11,25 +11,25 @@ const supabase = (window.supabase && window.supabase.createClient)
     : null;
 
 // ======= الحالة العامة =======
-let students       = [];
-let invitations    = {};  // { [code]: { studentId, name, invNum, used, usedAt } }
-let scanLog        = [];
-let entryTimeline  = [];
-let donutChart     = null;
-let lineChart      = null;
-let html5Qr        = null;
-let cameraRunning  = false;
+let students = [];
+let invitations = {};  // { [code]: { studentId, name, invNum, used, usedAt } }
+let scanLog = [];
+let entryTimeline = [];
+let donutChart = null;
+let lineChart = null;
+let html5Qr = null;
+let cameraRunning = false;
 let autoCloseTimer = null;
-let lastScanned    = '';
-let lastScanTime   = 0;
-let lastScanCode   = '';
-let scanDebounce   = null;
+let lastScanned = '';
+let lastScanTime = 0;
+let lastScanCode = '';
+let scanDebounce = null;
 
 // ======= AUDIO =======
 let audioCtx = null;
 function getAudioCtx() {
     if (!audioCtx) {
-        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { }
     }
     return audioCtx;
 }
@@ -39,7 +39,7 @@ function playBeep(type) {
         const ctx = getAudioCtx();
         if (!ctx) return;
         if (ctx.state === 'suspended') ctx.resume();
-        const osc  = ctx.createOscillator();
+        const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -110,11 +110,11 @@ async function loadState() {
         (dbInvitations || []).forEach(i => {
             const studentObj = (dbStudents || []).find(s => s.id === i.student_id);
             invitations[i.code] = {
-                studentId : i.student_id,
-                name      : studentObj ? studentObj.name : '—',
-                invNum    : i.inv_num,
-                used      : i.used,
-                usedAt    : i.used_at ? new Date(i.used_at).toLocaleTimeString('ar-SA') : null
+                studentId: i.student_id,
+                name: studentObj ? studentObj.name : '—',
+                invNum: i.inv_num,
+                used: i.used,
+                usedAt: i.used_at ? new Date(i.used_at).toLocaleTimeString('ar-SA') : null
             };
         });
 
@@ -153,7 +153,7 @@ async function loadState() {
 function el(id) { return document.getElementById(id); }
 
 // ======= تبديل الألواح =======
-function showPanel(name, btn) {
+window.showPanel = function (name, btn) {
     const panel = el('panel-' + name);
     if (!panel) return;
 
@@ -166,21 +166,21 @@ function showPanel(name, btn) {
     if (name === 'dash') refreshDash();
 
     if (name === 'scan') {
-        // إذا كان الوضع يدوياً، ركّز على حقل الإدخال
-        if (el('manual-section') && el('manual-section').style.display !== 'none') {
+        if (el('manual-section') &&
+            el('manual-section').style.display !== 'none') {
             el('scan-input') && el('scan-input').focus();
         }
     } else {
         stopCamera();
     }
-}
+};
 
 // ======= وضع المسح =======
 function setMode(mode) {
-    const camBtn  = el('mode-cam');
-    const manBtn  = el('mode-manual');
-    const camSec  = el('cam-section');
-    const manSec  = el('manual-section');
+    const camBtn = el('mode-cam');
+    const manBtn = el('mode-manual');
+    const camSec = el('cam-section');
+    const manSec = el('manual-section');
 
     if (camBtn) camBtn.className = 'btn ' + (mode === 'cam' ? 'btn-primary' : 'btn-ghost');
     if (manBtn) manBtn.className = 'btn ' + (mode === 'manual' ? 'btn-primary' : 'btn-ghost');
@@ -210,11 +210,11 @@ function startCamera() {
         { facingMode: 'environment' },
         config,
         (decodedText) => { if (cameraRunning) doScan(decodedText.trim()); },
-        () => {}
+        () => { }
     ).then(() => {
         cameraRunning = true;
         el('btn-start-cam') && (el('btn-start-cam').style.display = 'none');
-        el('btn-stop-cam')  && (el('btn-stop-cam').style.display  = 'flex');
+        el('btn-stop-cam') && (el('btn-stop-cam').style.display = 'flex');
         const st = el('cam-status');
         if (st) { st.textContent = 'الكاميرا تعمل — وجّه الباركود داخل الإطار'; st.style.color = 'var(--success)'; }
     }).catch(err => {
@@ -228,7 +228,7 @@ function stopCamera() {
         html5Qr.stop().then(() => {
             cameraRunning = false;
             el('btn-start-cam') && (el('btn-start-cam').style.display = 'flex');
-            el('btn-stop-cam')  && (el('btn-stop-cam').style.display  = 'none');
+            el('btn-stop-cam') && (el('btn-stop-cam').style.display = 'none');
             const st = el('cam-status');
             if (st) { st.textContent = 'الكاميرا متوقفة'; st.style.color = 'var(--text-muted)'; }
         }).catch(() => { cameraRunning = false; });
@@ -239,7 +239,7 @@ function stopCamera() {
 async function doScan(code) {
     const now = Date.now();
     if (code === lastScanned && now - lastScanTime < 2500) return;
-    lastScanned  = code;
+    lastScanned = code;
     lastScanTime = now;
     lastScanCode = code;
 
@@ -273,8 +273,8 @@ async function doScan(code) {
             playBeep('duplicate');
             showResultOverlay('duplicate', {
                 studentId: invData.student_id,
-                name     : studentName,
-                invNum   : invData.inv_num,
+                name: studentName,
+                invNum: invData.inv_num,
                 usedAt
             });
             addToLog(code, 'دعوة مكرّرة', studentName, 'dup', timeStr);
@@ -294,11 +294,11 @@ async function doScan(code) {
             if (!invitations[code]) {
                 invitations[code] = { studentId: invData.student_id, name: studentName, invNum: invData.inv_num };
             }
-            invitations[code].used   = true;
+            invitations[code].used = true;
             invitations[code].usedAt = timeStr;
 
             entryTimeline.push({
-                time : timeStr,
+                time: timeStr,
                 count: Object.values(invitations).filter(i => i.used).length
             });
 
@@ -308,9 +308,9 @@ async function doScan(code) {
             updateHeader();
 
             try {
-                localStorage.setItem('inv_scanLog',       JSON.stringify(scanLog));
+                localStorage.setItem('inv_scanLog', JSON.stringify(scanLog));
                 localStorage.setItem('inv_entryTimeline', JSON.stringify(entryTimeline));
-            } catch (e) {}
+            } catch (e) { }
         }
     } catch (e) {
         console.error('خطأ في المسح:', e);
@@ -344,23 +344,23 @@ function showResultOverlay(type, data) {
     const overlay = el('result-overlay');
     if (!overlay) return;
 
-    const icons    = { success: '✅', duplicate: '⚠️', invalid: '❌' };
-    const statsTx  = { success: 'تم تسجيل الدخول بنجاح!', duplicate: 'هذه الدعوة مستخدمة مسبقاً!', invalid: 'باركود غير صالح!' };
+    const icons = { success: '✅', duplicate: '⚠️', invalid: '❌' };
+    const statsTx = { success: 'تم تسجيل الدخول بنجاح!', duplicate: 'هذه الدعوة مستخدمة مسبقاً!', invalid: 'باركود غير صالح!' };
     const statsCls = { success: 'ok', duplicate: 'dup', invalid: 'bad' };
-    const ovCls    = { success: 'success-ov', duplicate: 'duplicate-ov', invalid: 'invalid-ov' };
+    const ovCls = { success: 'success-ov', duplicate: 'duplicate-ov', invalid: 'invalid-ov' };
 
     const resIcon = el('res-icon');
-    const stEl    = el('res-status');
+    const stEl = el('res-status');
     if (resIcon) resIcon.textContent = icons[type];
-    if (stEl)    { stEl.textContent = statsTx[type]; stEl.className = 'result-status-text ' + statsCls[type]; }
+    if (stEl) { stEl.textContent = statsTx[type]; stEl.className = 'result-status-text ' + statsCls[type]; }
 
     if (type !== 'invalid') {
         el('res-name') && (el('res-name').textContent = data.name || '—');
-        el('res-sid')  && (el('res-sid').textContent  = 'رقم الطالب: ' + (data.studentId || '—'));
+        el('res-sid') && (el('res-sid').textContent = 'رقم الطالب: ' + (data.studentId || '—'));
         const invEl = el('res-inv');
         if (invEl) {
             invEl.textContent = 'دعوة ' + (data.invNum === 1 ? 'الأولى' : 'الثانية');
-            invEl.className   = 'result-inv-badge ' + (data.invNum === 1 ? 'badge-info' : 'badge-success');
+            invEl.className = 'result-inv-badge ' + (data.invNum === 1 ? 'badge-info' : 'badge-success');
         }
         el('res-time') && (el('res-time').textContent =
             type === 'duplicate'
@@ -368,8 +368,8 @@ function showResultOverlay(type, data) {
                 : 'وقت الدخول: ' + new Date().toLocaleTimeString('ar-SA'));
     } else {
         el('res-name') && (el('res-name').textContent = 'رمز غير معرّف');
-        el('res-sid')  && (el('res-sid').textContent  = '');
-        el('res-inv')  && (el('res-inv').textContent  = '');
+        el('res-sid') && (el('res-sid').textContent = '');
+        el('res-inv') && (el('res-inv').textContent = '');
         el('res-time') && (el('res-time').textContent = '');
     }
 
@@ -403,7 +403,7 @@ function addToLog(code, status, name, type, time) {
     if (es) es.remove();
 
     const icons = { ok: '✅', dup: '⚠️', bad: '❌' };
-    const item  = document.createElement('div');
+    const item = document.createElement('div');
     item.className = 'log-item ' + type;
     item.innerHTML =
         `<span>${icons[type] || '🔍'}</span>
@@ -441,21 +441,21 @@ window.clearLog = function () {
     const logEl = el('scan-log');
     if (logEl) logEl.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>لا توجد عمليات مسح بعد</p></div>';
     scanLog = [];
-    try { localStorage.removeItem('inv_scanLog'); } catch (e) {}
+    try { localStorage.removeItem('inv_scanLog'); } catch (e) { }
 };
 
 // ======= تحديث الهيدر =======
 function updateHeader() {
-    const total   = Object.keys(invitations).length;
+    const total = Object.keys(invitations).length;
     const entered = Object.values(invitations).filter(i => i.used).length;
-    const pct     = total > 0 ? Math.round(entered / total * 100) : 0;
+    const pct = total > 0 ? Math.round(entered / total * 100) : 0;
 
     const set = (id, txt) => { const e = el(id); if (e) e.textContent = txt; };
-    set('hdr-total',    total.toLocaleString('ar'));
-    set('hdr-entered',  entered.toLocaleString('ar'));
-    set('hdr-pct',      pct + '%');
-    set('cnt-total',    total.toLocaleString('ar'));
-    set('cnt-entered',  entered.toLocaleString('ar'));
+    set('hdr-total', total.toLocaleString('ar'));
+    set('hdr-entered', entered.toLocaleString('ar'));
+    set('hdr-pct', pct + '%');
+    set('cnt-total', total.toLocaleString('ar'));
+    set('cnt-entered', entered.toLocaleString('ar'));
     set('cnt-remaining', (total - entered).toLocaleString('ar'));
 }
 
@@ -506,10 +506,10 @@ function renderQRPlaceholders() {
             }
 
             const nameDiv = document.createElement('div'); nameDiv.className = 'name'; nameDiv.textContent = s.name;
-            const idDiv   = document.createElement('div'); idDiv.className   = 'inv-id'; idDiv.textContent   = code;
-            const bwrap   = document.createElement('div'); bwrap.style.cssText = 'font-size:10px;margin-top:4px;';
-            const badge   = document.createElement('span');
-            badge.className   = 'badge badge-' + (num === 1 ? 'info' : 'success');
+            const idDiv = document.createElement('div'); idDiv.className = 'inv-id'; idDiv.textContent = code;
+            const bwrap = document.createElement('div'); bwrap.style.cssText = 'font-size:10px;margin-top:4px;';
+            const badge = document.createElement('span');
+            badge.className = 'badge badge-' + (num === 1 ? 'info' : 'success');
             badge.textContent = 'دعوة ' + (num === 1 ? 'الأولى' : 'الثانية');
             bwrap.appendChild(badge);
             card.appendChild(nameDiv); card.appendChild(idDiv); card.appendChild(bwrap);
@@ -522,19 +522,19 @@ function renderQRPlaceholders() {
 window.refreshDash = async function () {
     if (supabase) await loadState();
 
-    const total    = students.length;
+    const total = students.length;
     const totalInv = Object.keys(invitations).length;
-    const entered  = Object.values(invitations).filter(i => i.used).length;
-    const pending  = totalInv - entered;
-    const pct      = totalInv > 0 ? Math.round(entered / totalInv * 100) : 0;
+    const entered = Object.values(invitations).filter(i => i.used).length;
+    const pending = totalInv - entered;
+    const pct = totalInv > 0 ? Math.round(entered / totalInv * 100) : 0;
 
     const set = (id, txt) => { const e = el(id); if (e) e.textContent = txt; };
-    set('d-students',     total.toLocaleString('ar'));
-    set('d-invitations',  totalInv.toLocaleString('ar'));
-    set('d-entered',      entered.toLocaleString('ar'));
-    set('d-entered-pct',  pct + '%');
-    set('d-pending',      pending.toLocaleString('ar'));
-    set('d-pending-pct',  (100 - pct) + '%');
+    set('d-students', total.toLocaleString('ar'));
+    set('d-invitations', totalInv.toLocaleString('ar'));
+    set('d-entered', entered.toLocaleString('ar'));
+    set('d-entered-pct', pct + '%');
+    set('d-pending', pending.toLocaleString('ar'));
+    set('d-pending-pct', (100 - pct) + '%');
 
     renderDonut(entered, pending);
     renderLine();
@@ -577,7 +577,7 @@ function renderLine() {
     if (lineChart) lineChart.destroy();
 
     const labels = entryTimeline.length > 0 ? entryTimeline.map((_, i) => i + 1) : [0];
-    const data   = entryTimeline.length > 0 ? entryTimeline.map(e => e.count)     : [0];
+    const data = entryTimeline.length > 0 ? entryTimeline.map(e => e.count) : [0];
 
     lineChart = new Chart(canvas.getContext('2d'), {
         type: 'line',
@@ -616,7 +616,7 @@ function renderDashTable() {
         const u1 = i1 && i1.used;
         const u2 = i2 && i2.used;
         const statusBadge = u1 && u2 ? 'badge-success' : (!u1 && !u2 ? 'badge-danger' : 'badge-warning');
-        const statusText  = u1 && u2 ? 'دخل بالدعوتين' : (!u1 && !u2 ? 'غائب' : 'دخل بدعوة واحدة');
+        const statusText = u1 && u2 ? 'دخل بالدعوتين' : (!u1 && !u2 ? 'غائب' : 'دخل بدعوة واحدة');
 
         return `<tr>
           <td><span class="badge badge-info">${s.id}</span></td>
@@ -632,16 +632,16 @@ function renderDashTable() {
           <td><span class="badge ${statusBadge}">${statusText}</span></td>
         </tr>`;
     }).join('') ||
-    '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">لا توجد بيانات. أضف طلاباً من تبويب الطلاب.</td></tr>';
+        '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">لا توجد بيانات. أضف طلاباً من تبويب الطلاب.</td></tr>';
 }
 
 // ======= إدارة الطلاب =======
 window.addManual = async function () {
-    const idEl   = el('inp-id');
+    const idEl = el('inp-id');
     const nameEl = el('inp-name');
     if (!idEl || !nameEl) return;
 
-    const id   = idEl.value.trim();
+    const id = idEl.value.trim();
     const name = nameEl.value.trim();
     if (!id || !name) { alert('أدخل رقم الطالب والاسم'); return; }
 
@@ -726,14 +726,14 @@ function parseCSVLine(line) {
 window.loadSample = async function () {
     if (!supabase) return;
     const sampleData = [
-        { id: '1001', name: 'أحمد محمد الغامدي'    },
+        { id: '1001', name: 'أحمد محمد الغامدي' },
         { id: '1002', name: 'سارة عبدالله الزهراني' },
-        { id: '1003', name: 'خالد إبراهيم العمري'   },
-        { id: '1004', name: 'نورة سعد القحطاني'    },
-        { id: '1005', name: 'عمر علي الشهري'       },
-        { id: '1006', name: 'ريم فهد الدوسري'      },
+        { id: '1003', name: 'خالد إبراهيم العمري' },
+        { id: '1004', name: 'نورة سعد القحطاني' },
+        { id: '1005', name: 'عمر علي الشهري' },
+        { id: '1006', name: 'ريم فهد الدوسري' },
         { id: '1007', name: 'محمد عبدالرحمن الحربي' },
-        { id: '1008', name: 'لمى يوسف المالكي'     },
+        { id: '1008', name: 'لمى يوسف المالكي' },
     ];
 
     const toInsertS = [], toInsertI = [];
@@ -812,21 +812,21 @@ window.resetSystem = async function () {
     }
 
     students = []; invitations = {}; scanLog = []; entryTimeline = [];
-    try { localStorage.clear(); } catch (e) {}
+    try { localStorage.clear(); } catch (e) { }
 
     el('students-section') && (el('students-section').style.display = 'none');
-    el('students-tbody')   && (el('students-tbody').innerHTML = '');
-    el('qr-preview')       && (el('qr-preview').innerHTML = '');
-    el('gen-idle')         && (el('gen-idle').style.display = 'block');
-    el('gen-actions')      && (el('gen-actions').style.display = 'none');
-    el('gen-progress')     && (el('gen-progress').style.display = 'none');
-    el('gen-pbar')         && (el('gen-pbar').style.width = '0%');
+    el('students-tbody') && (el('students-tbody').innerHTML = '');
+    el('qr-preview') && (el('qr-preview').innerHTML = '');
+    el('gen-idle') && (el('gen-idle').style.display = 'block');
+    el('gen-actions') && (el('gen-actions').style.display = 'none');
+    el('gen-progress') && (el('gen-progress').style.display = 'none');
+    el('gen-pbar') && (el('gen-pbar').style.width = '0%');
     el('scan-log') && (el('scan-log').innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>لا توجد عمليات مسح بعد</p></div>');
 
     updateHeader();
     updateStudentsCount();
     if (donutChart) { donutChart.destroy(); donutChart = null; }
-    if (lineChart)  { lineChart.destroy();  lineChart  = null; }
+    if (lineChart) { lineChart.destroy(); lineChart = null; }
     renderDonut(0, 1); renderLine();
     renderDashTable();
     alert('تم تفريغ النظام بالكامل.');
@@ -843,14 +843,14 @@ window.resetCheckins = async function () {
     }
 
     Object.keys(invitations).forEach(code => {
-        invitations[code].used   = false;
+        invitations[code].used = false;
         invitations[code].usedAt = null;
     });
     scanLog = []; entryTimeline = [];
     try {
         localStorage.removeItem('inv_scanLog');
         localStorage.removeItem('inv_entryTimeline');
-    } catch (e) {}
+    } catch (e) { }
 
     el('scan-log') && (el('scan-log').innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>لا توجد عمليات مسح بعد</p></div>');
     refreshDash();
@@ -877,13 +877,13 @@ async function generateQRBase64(text) {
         const check = () => {
             attempts++;
             const canvas = container.querySelector('canvas');
-            const img    = container.querySelector('img');
+            const img = container.querySelector('img');
             if (canvas) {
                 try {
                     const dataURL = canvas.toDataURL('image/png');
                     document.body.removeChild(container);
                     resolve(dataURL); return;
-                } catch (e) {}
+                } catch (e) { }
             }
             if (img && img.src && img.src.startsWith('data:image')) {
                 document.body.removeChild(container);
@@ -899,16 +899,16 @@ async function generateQRBase64(text) {
 window.generateAll = async function () {
     if (students.length === 0) { alert('أضف طلاباً أولاً من تبويب إدارة الطلاب'); return; }
 
-    el('gen-idle')     && (el('gen-idle').style.display     = 'none');
+    el('gen-idle') && (el('gen-idle').style.display = 'none');
     el('gen-progress') && (el('gen-progress').style.display = 'block');
-    el('qr-preview')   && (el('qr-preview').innerHTML       = '');
+    el('qr-preview') && (el('qr-preview').innerHTML = '');
 
     const total = students.length * 2;
     let done = 0;
 
     for (const s of students) {
         for (const num of [1, 2]) {
-            const code   = s['inv' + num];
+            const code = s['inv' + num];
             const base64 = await generateQRBase64(code);
             s['qr' + num + '_base64'] = base64;
 
@@ -927,10 +927,10 @@ window.generateAll = async function () {
             }
 
             const nameDiv = document.createElement('div'); nameDiv.className = 'name'; nameDiv.textContent = s.name;
-            const idDiv   = document.createElement('div'); idDiv.className   = 'inv-id'; idDiv.textContent   = code;
-            const bwrap   = document.createElement('div'); bwrap.style.cssText = 'font-size:10px;margin-top:4px;';
-            const badge   = document.createElement('span');
-            badge.className   = 'badge badge-' + (num === 1 ? 'info' : 'success');
+            const idDiv = document.createElement('div'); idDiv.className = 'inv-id'; idDiv.textContent = code;
+            const bwrap = document.createElement('div'); bwrap.style.cssText = 'font-size:10px;margin-top:4px;';
+            const badge = document.createElement('span');
+            badge.className = 'badge badge-' + (num === 1 ? 'info' : 'success');
             badge.textContent = 'دعوة ' + (num === 1 ? 'الأولى' : 'الثانية');
             bwrap.appendChild(badge);
             card.appendChild(nameDiv); card.appendChild(idDiv); card.appendChild(bwrap);
@@ -938,14 +938,14 @@ window.generateAll = async function () {
 
             done++;
             const pct = Math.round(done / total * 100);
-            el('gen-pbar')         && (el('gen-pbar').style.width         = pct + '%');
-            el('gen-status-text')  && (el('gen-status-text').textContent  = `جاري التوليد... ${done}/${total} (${pct}%)`);
+            el('gen-pbar') && (el('gen-pbar').style.width = pct + '%');
+            el('gen-status-text') && (el('gen-status-text').textContent = `جاري التوليد... ${done}/${total} (${pct}%)`);
         }
         await sleep(5);
     }
 
     el('gen-status-text') && (el('gen-status-text').textContent = `✅ تم توليد ${total} رمز QR لـ ${students.length} طالب بنجاح`);
-    el('gen-actions')     && (el('gen-actions').style.display     = 'flex');
+    el('gen-actions') && (el('gen-actions').style.display = 'flex');
     updateHeader();
 };
 
