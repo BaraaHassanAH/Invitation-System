@@ -210,19 +210,18 @@
       </section>
 
       <section id="panel-students" class="panel">
-        <div class="action-bar" style="margin-bottom: 20px;">
+        <div class="action-bar"
+          style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
           <h2>👥 السجل الرئيسي لقاعدة بيانات المدعوين</h2>
+
+          <button class="btn btn-danger" onclick="deleteAllStudents()"
+            style="background-color: var(--danger); font-weight: bold;">
+            🗑️ حذف جميع الطلاب
+          </button>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;">
-          <div class="form-group" style="margin: 0;">
-            <input type="text" id="inp-id" placeholder="رقم الطالب (مثال: 1001)"
-              style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
-          </div>
-          <div class="form-group" style="margin: 0;">
-            <input type="text" id="inp-name" placeholder="اسم الطالب بالكامل"
-              style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; width: 250px;">
-          </div>
-          <button class="btn btn-primary" onclick="addManual()">
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+          <button class="btn btn-primary" onclick="openAddStudentModal()">
             ➕ إضافة طالب جديد
           </button>
 
@@ -237,10 +236,10 @@
           <button class="btn btn-success" onclick="exportCSV()">
             📄 تصدير CSV
           </button>
-
         </div>
 
-        <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="importCSV(event)">
+        <input type="file" id="csv-file" accept=".csv" style="display:none">
+
         <div id="students-section" class="table-card">
           <div class="table-responsive">
             <table>
@@ -257,6 +256,34 @@
               <tbody id="students-tbody">
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <div id="add-student-modal"
+          style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+          <div
+            style="background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); position: relative;">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--text);">➕ إضافة طالب جديد</h3>
+
+            <div style="margin-bottom: 15px;">
+              <label for="inp-id" style="display: block; margin-bottom: 5px; font-weight: 500; font-size: 13px;">رقم
+                الطالب (المعرف):</label>
+              <input type="text" id="inp-id" placeholder="مثال: 1001"
+                style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <label for="inp-name" style="display: block; margin-bottom: 5px; font-weight: 500; font-size: 13px;">اسم
+                الطالب بالكامل:</label>
+              <input type="text" id="inp-name" placeholder="أدخل الاسم الثلاثي أو الرباعي"
+                style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box;">
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button class="btn btn-outline" onclick="closeAddStudentModal()" style="padding: 8px 16px;">إلغاء</button>
+              <button class="btn btn-primary" onclick="submitManualStudent()" style="padding: 8px 16px;">حفظ
+                الطالب</button>
+            </div>
           </div>
         </div>
       </section>
