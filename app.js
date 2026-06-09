@@ -77,39 +77,65 @@ async function loadState() {
         if (sl) scanLog = JSON.parse(sl);
         if (se) entryTimeline = JSON.parse(se);
 
+        // الحماية: التحقق من وجود العناصر قبل تعديل خصائصها
         if (students.length > 0) {
-            document.getElementById('students-section').style.display = 'block';
+            const stSec = document.getElementById('students-section');
+            if (stSec) stSec.style.display = 'block';
+
             renderStudentsTable();
+
             if (Object.keys(invitations).length > 0) {
-                document.getElementById('gen-idle').style.display = 'none';
-                document.getElementById('gen-actions').style.display = 'flex';
+                const genIdle = document.getElementById('gen-idle');
+                const genActions = document.getElementById('gen-actions');
+                if (genIdle) genIdle.style.display = 'none';
+                if (genActions) genActions.style.display = 'flex';
                 renderQRPlaceholders();
             }
         }
-        if (scanLog.length > 0) renderLogFromState();
+        renderLogFromState();
         updateHeader();
-    } catch (e) { console.error('خطأ في جلب البيانات السحابية:', e); }
+    } catch (e) {
+        console.error('خطأ في جلب البيانات السحابية:', e);
+    }
 }
 
 // ======= TABS =======
 function showPanel(name, el) {
+    const panel = document.getElementById('panel-' + name);
+    if (!panel) return;
+
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('panel-' + name).classList.add('active');
-    el.classList.add('active');
+
+    panel.classList.add('active');
+    if (el) el.classList.add('active');
+
     if (name === 'dash') refreshDash();
-    if (name === 'scan' && document.getElementById('mode-manual').classList.contains('active'))
-        document.getElementById('scan-input').focus();
+
+    const scanInp = document.getElementById('scan-input');
+    if (name === 'scan' && document.getElementById('mode-manual')?.classList.contains('active') && scanInp) {
+        scanInp.focus();
+    }
     if (name !== 'scan') stopCamera();
 }
 
 // ======= MODE TOGGLE =======
 function setMode(mode) {
-    document.getElementById('mode-cam').classList.toggle('active', mode === 'cam');
-    document.getElementById('mode-manual').classList.toggle('active', mode === 'manual');
-    document.getElementById('cam-section').style.display = mode === 'cam' ? 'block' : 'none';
-    document.getElementById('manual-section').style.display = mode === 'manual' ? 'block' : 'none';
-    if (mode === 'manual') { stopCamera(); document.getElementById('scan-input').focus(); }
+    const camBtn = document.getElementById('mode-cam');
+    const manBtn = document.getElementById('mode-manual');
+    const camSec = document.getElementById('cam-section');
+    const manSec = document.getElementById('manual-section');
+    const scanInp = document.getElementById('scan-input');
+
+    if (camBtn) camBtn.classList.toggle('active', mode === 'cam');
+    if (manBtn) manBtn.classList.toggle('active', mode === 'manual');
+    if (camSec) camSec.style.display = mode === 'cam' ? 'block' : 'none';
+    if (manSec) manSec.style.display = mode === 'manual' ? 'block' : 'none';
+
+    if (mode === 'manual') {
+        stopCamera();
+        if (scanInp) scanInp.focus();
+    }
 }
 
 // ======= CAMERA =======
@@ -147,50 +173,145 @@ function stopCamera() {
 }
 
 // ======= SCAN RESULT =======
-let lastScanCode = '';
 function showResultOverlay(type, data) {
     const overlay = document.getElementById('result-overlay');
+    if (!overlay) return;
+
     const icons = { success: '✅', duplicate: '⚠️', invalid: '❌' };
     const statusTx = { success: 'تم تسجيل الدخول بنجاح!', duplicate: 'هذه الدعوة مستخدمة مسبقاً!', invalid: 'باركود غير صالح!' };
     const statusCls = { success: 'ok', duplicate: 'dup', invalid: 'bad' };
     const overlayC = { success: 'success-ov', duplicate: 'duplicate-ov', invalid: 'invalid-ov' };
 
-    document.getElementById('res-icon').textContent = icons[type];
+    const resIcon = document.getElementById('res-icon');
     const stEl = document.getElementById('res-status');
-    stEl.textContent = statusTx[type]; stEl.className = 'result-status-text ' + statusCls[type];
+    if (resIcon) resIcon.textContent = icons[type];
+    if (stEl) { stEl.textContent = statusTx[type]; stEl.className = 'result-status-text ' + statusCls[type]; }
+
+    const resName = document.getElementById('res-name');
+    const resSid = document.getElementById('res-sid');
+    const invEl = document.getElementById('res-inv');
+    const resTime = document.getElementById('res-time');
 
     if (type !== 'invalid') {
-        document.getElementById('res-name').textContent = data.name;
-        document.getElementById('res-sid').textContent = 'رقم الطالب: ' + data.studentId;
-        const invEl = document.getElementById('res-inv');
-        invEl.textContent = 'دعوة ' + (data.invNum === 1 ? 'الأولى' : 'الثانية');
-        invEl.className = 'result-inv-badge ' + (data.invNum === 1 ? 'badge-info' : 'badge-success');
-        document.getElementById('res-time').textContent = type === 'duplicate'
-            ? 'سبق دخوله في: ' + data.usedAt
-            : 'وقت الدخول: ' + new Date().toLocaleTimeString('ar-SA');
+        if (resName) resName.textContent = data.name;
+        if (resSid) resSid.textContent = 'رقم الطالب: ' + data.studentId;
+        if (invEl) {
+            invEl.textContent = 'دعوة ' + (data.invNum === 1 ? 'الأولى' : 'الثانية');
+            invEl.className = 'result-inv-badge ' + (data.invNum === 1 ? 'badge-info' : 'badge-success');
+        }
+        if (resTime) resTime.textContent = type === 'duplicate' ? 'سبق دخوله في: ' + data.usedAt : 'وقت الدخول: ' + new Date().toLocaleTimeString('ar-SA');
     } else {
-        document.getElementById('res-name').textContent = 'رمز غير معرّف';
-        document.getElementById('res-sid').textContent = '';
-        document.getElementById('res-inv').textContent = '';
-        document.getElementById('res-time').textContent = '';
+        if (resName) resName.textContent = 'رمز غير معرّف';
+        if (resSid) resSid.textContent = '';
+        if (invEl) invEl.textContent = '';
+        if (resTime) resTime.textContent = '';
     }
-    document.getElementById('res-code').textContent = lastScanCode;
+
+    const resCode = document.getElementById('res-code');
+    if (resCode) resCode.textContent = lastScanCode;
     overlay.className = 'result-overlay show ' + overlayC[type];
 
     const bar = document.getElementById('res-autobar');
-    bar.style.transition = 'none'; bar.style.width = '100%';
-    setTimeout(() => { bar.style.transition = 'width 3s linear'; bar.style.width = '0%'; }, 50);
+    if (bar) {
+        bar.style.transition = 'none'; bar.style.width = '100%';
+        setTimeout(() => { bar.style.transition = 'width 3s linear'; bar.style.width = '0%'; }, 50);
+    }
     clearTimeout(autoCloseTimer);
     autoCloseTimer = setTimeout(() => dismissResult(), 3000);
 }
 
-// دالة إخفاء نافذة النتيجة
-window.dismissResult = function () {
-    clearTimeout(autoCloseTimer);
-    document.getElementById('result-overlay').className = 'result-overlay';
-    if (!cameraRunning && document.getElementById('mode-manual').classList.contains('active')) {
-        const inp = document.getElementById('scan-input'); inp.value = ''; inp.focus();
+function addLog(code, status, name, type, time) {
+    const logEl = document.getElementById('scan-log');
+    if (!logEl) return;
+
+    const es = logEl.querySelector('.empty-state'); if (es) es.remove();
+    const icons = { ok: '✅', dup: '⚠️', bad: '❌' };
+    const item = document.createElement('div'); item.className = 'log-item ' + type;
+    item.innerHTML = `<span>${icons[type]}</span>
+    <span style="font-weight:600;flex:1">${name !== '—' ? name : code.substring(0, 16)}</span>
+    <span class="badge badge-${type === 'ok' ? 'success' : type === 'dup' ? 'warning' : 'danger'}">${status}</span>
+    <span class="log-time">${time}</span>`;
+    logEl.insertBefore(item, logEl.firstChild);
+
+    // تجنب التكرار في المصفوفة المحلية
+    if (!scanLog.some(l => l.code === code && l.time === time)) {
+        scanLog.unshift({ code, status, name, type, time });
     }
+}
+
+function updateHeader() {
+    const total = Object.keys(invitations).length;
+    const entered = Object.values(invitations).filter(i => i.used).length;
+    const pct = total > 0 ? Math.round(entered / total * 100) : 0;
+
+    const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+
+    setTxt('hdr-total', total.toLocaleString('ar'));
+    setTxt('hdr-entered', entered.toLocaleString('ar'));
+    setTxt('hdr-pct', pct + '%');
+    setTxt('cnt-total', total.toLocaleString('ar'));
+    setTxt('cnt-entered', entered.toLocaleString('ar'));
+    setTxt('cnt-remaining', (total - entered).toLocaleString('ar'));
+}
+
+function renderStudentsTable() {
+    const tbody = document.getElementById('students-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = students.map((s, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><span class="badge badge-info">${s.id}</span></td>
+      <td><strong>${s.name}</strong></td>
+      <td style="font-size:10px;font-family:monospace;color:var(--text-muted)">${s.inv1 || '—'}</td>
+      <td style="font-size:10px;font-family:monospace;color:var(--text-muted)">${s.inv2 || '—'}</td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="removeStudent(${i})">🗑️</button></td>
+    </tr>`).join('');
+}
+
+function renderQRPlaceholders() {
+    const previewEl = document.getElementById('qr-preview');
+    if (!previewEl) return;
+
+    previewEl.innerHTML = '';
+    students.forEach(s => {
+        [1, 2].forEach(num => {
+            const code = s['inv' + num];
+            const card = document.createElement('div'); card.className = 'qr-card';
+            const b64 = s['qr' + num + '_base64'];
+            if (b64) {
+                const img = document.createElement('img'); img.src = b64; img.alt = code; card.appendChild(img);
+            } else {
+                const ph = document.createElement('div');
+                ph.style.cssText = 'width:114px;height:114px;background:#f1f5f9;border:1px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8;border-radius:6px;margin:0 auto 8px;text-align:center;padding:8px;';
+                ph.textContent = '⚡ اضغط توليد لإعادة إنشاء الباركود'; card.appendChild(ph);
+            }
+            const nameDiv = document.createElement('div'); nameDiv.className = 'name'; nameDiv.textContent = s.name;
+            const idDiv = document.createElement('div'); idDiv.className = 'inv-id'; idDiv.textContent = code;
+            const bwrap = document.createElement('div'); bwrap.style.cssText = 'font-size:10px;margin-top:4px';
+            const badge = document.createElement('span');
+            badge.className = 'badge badge-' + (num === 1 ? 'info' : 'success'); badge.textContent = 'دعوة ' + (num === 1 ? 'الأولى' : 'الثانية');
+            bwrap.appendChild(badge); card.appendChild(nameDiv); card.appendChild(idDiv); card.appendChild(bwrap);
+            previewEl.appendChild(card);
+        });
+    });
+}
+
+function renderLogFromState() {
+    const logEl = document.getElementById('scan-log');
+    if (!logEl) return;
+    if (scanLog.length === 0) return;
+
+    logEl.innerHTML = '';
+    const icons = { ok: '✅', dup: '⚠️', bad: '❌' };
+    scanLog.forEach(l => {
+        const item = document.createElement('div'); item.className = 'log-item ' + l.type;
+        item.innerHTML = `<span>${icons[l.type] || '🔍'}</span>
+      <span style="font-weight:600;flex:1">${l.name !== '—' ? l.name : l.code.substring(0, 16)}</span>
+      <span class="badge badge-${l.type === 'ok' ? 'success' : l.type === 'dup' ? 'warning' : 'danger'}">${l.status}</span>
+      <span class="log-time">${l.time}</span>`;
+        logEl.appendChild(item);
+    });
 }
 
 // ======= REALTIME LIVE SCAN LOGIC =======
@@ -602,18 +723,22 @@ window.refreshDash = async function () {
     const pending = totalInv - entered;
     const pct = totalInv > 0 ? Math.round(entered / totalInv * 100) : 0;
 
-    document.getElementById('d-students').textContent = total.toLocaleString('ar');
-    document.getElementById('d-invitations').textContent = totalInv.toLocaleString('ar');
-    document.getElementById('d-entered').textContent = entered.toLocaleString('ar');
-    document.getElementById('d-entered-pct').textContent = pct + '%';
-    document.getElementById('d-pending').textContent = pending.toLocaleString('ar');
-    document.getElementById('d-pending-pct').textContent = (100 - pct) + '%';
+    const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+
+    setTxt('d-students', total.toLocaleString('ar'));
+    setTxt('d-invitations', totalInv.toLocaleString('ar'));
+    setTxt('d-entered', entered.toLocaleString('ar'));
+    setTxt('d-entered-pct', pct + '%');
+    setTxt('d-pending', pending.toLocaleString('ar'));
+    setTxt('d-pending-pct', (100 - pct) + '%');
 
     renderDonut(entered, pending); renderLine(); renderDashTable(); updateHeader();
 }
 
 function renderDonut(e, p) {
-    const ctx = document.getElementById('chart-donut').getContext('2d');
+    const canvas = document.getElementById('chart-donut');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     if (donutChart) donutChart.destroy();
     donutChart = new Chart(ctx, {
         type: 'doughnut',
@@ -623,7 +748,9 @@ function renderDonut(e, p) {
 }
 
 function renderLine() {
-    const ctx = document.getElementById('chart-line').getContext('2d');
+    const canvas = document.getElementById('chart-line');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     if (lineChart) lineChart.destroy();
     const labels = entryTimeline.length > 0 ? entryTimeline.map((_, i) => i + 1) : [0];
     const data = entryTimeline.length > 0 ? entryTimeline.map(e => e.count) : [0];
@@ -635,7 +762,10 @@ function renderLine() {
 }
 
 function renderDashTable() {
-    document.getElementById('dash-tbody').innerHTML = students.map(s => {
+    const tbody = document.getElementById('dash-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = students.map(s => {
         const i1 = invitations[s.inv1], i2 = invitations[s.inv2];
         const u1 = i1 && i1.used, u2 = i2 && i2.used;
         return `<tr>
