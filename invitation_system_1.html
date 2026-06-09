@@ -193,7 +193,15 @@
               </div>
             </div>
           </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+            <button class="btn btn-primary" onclick="scanManual()">
+              🔎 مسح الآن
+            </button>
 
+            <button class="btn btn-outline" onclick="clearScanLog()">
+              🗑️ مسح سجل عمليات المسح
+            </button>
+          </div>
           <div class="log-card">
             <h3>⏱️ سجل عمليات المسح المباشر</h3>
             <div id="scan-log" class="log-container">
@@ -207,7 +215,27 @@
         <div class="action-bar" style="margin-bottom: 20px;">
           <h2>👥 السجل الرئيسي لقاعدة بيانات المدعوين</h2>
         </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;">
 
+          <button class="btn btn-primary" onclick="addStudent()">
+            ➕ إضافة طالب جديد
+          </button>
+
+          <button class="btn btn-outline" onclick="document.getElementById('csv-file').click()">
+            📂 استيراد CSV
+          </button>
+
+          <button class="btn btn-secondary" onclick="loadDemoData()">
+            🧪 تحميل بيانات تجريبية
+          </button>
+
+          <button class="btn btn-success" onclick="exportStudentsCSV()">
+            📄 تصدير CSV
+          </button>
+
+        </div>
+
+        <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="importCSV(event)">
         <div id="students-section" class="table-card">
           <div class="table-responsive">
             <table>
@@ -249,7 +277,21 @@
           <button class="btn btn-success" onclick="printInvitations()">🖨️ طباعة كافة البطاقات</button>
           <button class="btn btn-secondary" onclick="generateAll()">🔄 إعادة توليد وتحديث</button>
         </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;">
 
+          <button class="btn btn-primary" onclick="generateAllQRCodes()">
+            ⚡ توليد رموز QR لجميع الطلاب
+          </button>
+
+          <button class="btn btn-secondary" onclick="printAllCards()">
+            🖨️ طباعة كافة البطاقات
+          </button>
+
+          <button class="btn btn-warning" onclick="regenerateQRCodes()">
+            🔄 إعادة التوليد
+          </button>
+
+        </div>
         <div id="qr-preview" class="qr-preview-grid">
         </div>
       </section>
