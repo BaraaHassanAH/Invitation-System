@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>نظام الدعوات الإلكترونية</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <script>
+    // جدار الحماية الأمني السريع للتأكد من تسجيل الدخول
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+      window.location.href = 'index.html';
+    }
+  </script>
+
+  <div class="result-overlay" id="result-overlay" onclick="dismissResult()">
+    <div class="result-card" onclick="event.stopPropagation()">
+      <div class="result-big-icon" id="res-icon">✅</div>
+      <div class="result-status-text ok" id="res-status">تم تسجيل الدخول بنجاح</div>
+      <div class="result-student-name" id="res-name">—</div>
+      <div class="result-student-id" id="res-sid">—</div>
+      <div id="res-inv" class="result-inv-badge">—</div>
+      <div class="result-time" id="res-time">—</div>
+      <div class="result-code" id="res-code"
+        style="font-size:11px; color:var(--text-muted); margin-top:8px; font-family:monospace;">—</div>
+      <div class="result-autobar-wrap"
+        style="width:100%; height:4px; background:#e2e8f0; margin-top:15px; border-radius:2px; overflow:hidden;">
+        <div id="res-autobar" style="width:100%; height:100%; background:var(--primary); transition: width 3s linear;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container">
+
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-logo">🎟️</span>
+        <div class="brand-meta">
+          <h2>نظام الدعوات</h2>
+          <p>إدارة الحضور الذكية</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <button class="tab active" onclick="showPanel('dash', this)">📊 لوحة الاستبصار</button>
+        <button class="tab" onclick="showPanel('scan', this)">🔍 فحص الباركود</button>
+        <button class="tab" onclick="showPanel('students', this)">👥 إدارة الطلاب</button>
+        <button class="tab" onclick="showPanel('qr', this)">⚡ بطاقات الدعوة</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn-logout" onclick="sessionStorage.clear(); window.location.href='index.html';">🚪 تسجيل
+          الخروج</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+
+      <header class="main-header">
+        <div class="header-title">
+          <h1>مرحباً بك في النظام</h1>
+          <p>متابعة لحظية ومزامنة سحابية عالية الأداء</p>
+        </div>
+        <div class="header-stats">
+          <div class="mini-stat">
+            <span class="label">إجمالي الدعوات:</span>
+            <span class="val" id="hdr-total">0</span>
+          </div>
+          <div class="mini-stat">
+            <span class="label">الحاضرون:</span>
+            <span class="val success" id="hdr-entered">0</span>
+          </div>
+          <div class="mini-stat">
+            <span class="label">نسبة الحضور:</span>
+            <span class="val info" id="hdr-pct">0%</span>
+          </div>
+        </div>
+      </header>
+
+      <section id="panel-dash" class="panel active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>👥 إجمالي الطلاب</h3>
+            <p class="stat-number" id="d-students">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>🎟️ إجمالي الدعوات</h3>
+            <p class="stat-number" id="d-invitations">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>✅ الحاضرون</h3>
+            <p class="stat-number text-success" id="d-entered">0</p>
+            <span class="stat-sub" id="d-entered-pct">0%</span>
+          </div>
+          <div class="stat-card">
+            <h3>⏳ المتبقون</h3>
+            <p class="stat-number text-danger" id="d-pending">0</p>
+            <span class="stat-sub" id="d-pending-pct">0%</span>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h3>📊 توزيع نسب الحضور</h3>
+            <div class="chart-container" style="position: relative; height:220px;">
+              <canvas id="chart-donut"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>📈 منحنى تدفق الدخول الزمني</h3>
+            <div class="chart-container" style="position: relative; height:220px;">
+              <canvas id="chart-line"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>📋 الحالة التفصيلية الفورية للمدعوين</h3>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>رقم الطالب</th>
+                  <th>الاسم</th>
+                  <th>الدعوة الأولى</th>
+                  <th>الدعوة الثانية</th>
+                  <th>حالة الحضور</th>
+                </tr>
+              </thead>
+              <tbody id="dash-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-scan" class="panel">
+        <div class="scanner-layout">
+          <div class="scanner-control">
+            <div class="mode-toggles">
+              <button id="mode-cam" class="btn active" onclick="setMode('cam')">📷 استخدام الكاميرا</button>
+              <button id="mode-manual" class="btn" onclick="setMode('manual')">⌨️ إدخال يدوي / قارئ خارجي</button>
+            </div>
+
+            <div id="cam-section" class="scan-area">
+              <div id="reader"
+                style="width: 100%; max-width: 420px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #f8fafc;">
+              </div>
+              <div class="cam-actions"
+                style="text-align:center; margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
+                <button class="btn btn-success" onclick="startCamera()">▶️ تشغيل الكاميرا</button>
+                <button class="btn btn-danger" onclick="stopCamera()">⏹️ إيقاف الكاميرا</button>
+              </div>
+            </div>
+
+            <div id="manual-section" class="scan-area" style="display: none;">
+              <div class="form-group">
+                <label for="scan-input">انقر هنا ثم امسح الكود عبر القارئ الليزري أو أدخله يدوياً:</label>
+                <input type="text" id="scan-input" placeholder="انتظار قراءة الرمز الفوري..." autocomplete="off">
+              </div>
+            </div>
+          </div>
+
+          <div class="log-card">
+            <h3>⏱️ سجل عمليات المسح المباشر</h3>
+            <div id="scan-log" class="log-container">
+              <div class="empty-state">في انتظار بدء عمليات المسح السحابي...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-students" class="panel">
+        <div class="action-bar" style="margin-bottom: 20px;">
+          <h2>👥 السجل الرئيسي لقاعدة بيانات المدعوين</h2>
+        </div>
+
+        <div id="students-section" class="table-card" style="display: none;">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>رقم الطالب</th>
+                  <th>اسم الطالب بالكامل</th>
+                  <th>كود الدعوة 1</th>
+                  <th>كود الدعوة 2</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="students-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-qr" class="panel">
+        <div class="qr-control-header">
+          <h2>⚡ إدارة وتجهيز رموز الـ QR السحابية</h2>
+          <p>يمكنك مراجعة الرموز المتاحة أو تفعيل محرك التوليد لتصدير البطاقات.</p>
+
+          <div id="gen-idle" class="gen-status-box" style="margin: 20px 0;">
+            <button class="btn btn-primary btn-lg" onclick="generateAllQR()">⚡ توليد وإعداد كود الـ QR لكل
+              الطلاب</button>
+          </div>
+
+          <div id="gen-actions" class="gen-status-box" style="display: none; gap: 12px; margin: 20px 0;">
+            <button class="btn btn-success" onclick="window.print()">🖨️ طباعة كافة البطاقات</button>
+            <button class="btn btn-secondary" onclick="generateAllQR()">🔄 إعادة مزامنة وتحديث</button>
+          </div>
+        </div>
+
+        <div id="qr-preview" class="qr-preview-grid">
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div style="display:none;">
+    <span id="cnt-total">0</span>
+    <span id="cnt-entered">0</span>
+    <span id="cnt-remaining">0</span>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+
+</html>

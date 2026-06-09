@@ -1,29 +1,28 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>نظام الدعوات الإلكترونية</title>
 
+  <!-- مكتبات خارجية -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
+  <!-- حارس الأمان: تأكيد تسجيل الدخول قبل عرض الصفحة -->
   <script>
-    // جدار الحماية الأمني السريع للتأكد من تسجيل الدخول
     if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-      window.location.href = 'index.html';
+      window.location.replace('index.html');
     }
   </script>
 
+  <!-- ====== OVERLAY نتيجة المسح ====== -->
   <div class="result-overlay" id="result-overlay" onclick="dismissResult()">
     <div class="result-card" onclick="event.stopPropagation()">
       <div class="result-big-icon" id="res-icon">✅</div>
@@ -32,18 +31,18 @@
       <div class="result-student-id" id="res-sid">—</div>
       <div id="res-inv" class="result-inv-badge">—</div>
       <div class="result-time" id="res-time">—</div>
-      <div class="result-code" id="res-code"
-        style="font-size:11px; color:var(--text-muted); margin-top:8px; font-family:monospace;">—</div>
-      <div class="result-autobar-wrap"
-        style="width:100%; height:4px; background:#e2e8f0; margin-top:15px; border-radius:2px; overflow:hidden;">
-        <div id="res-autobar" style="width:100%; height:100%; background:var(--primary); transition: width 3s linear;">
-        </div>
+      <div class="result-code" id="res-code">—</div>
+      <div style="width:100%;height:4px;background:#e2e8f0;margin-top:15px;border-radius:2px;overflow:hidden;">
+        <div id="res-autobar" style="width:100%;height:100%;background:var(--primary);transition:width 3s linear;"></div>
       </div>
+      <button class="result-dismiss" onclick="dismissResult()">إغلاق</button>
     </div>
   </div>
 
+  <!-- ====== التخطيط الرئيسي ====== -->
   <div class="app-container">
 
+    <!-- الشريط الجانبي -->
     <aside class="sidebar">
       <div class="sidebar-brand">
         <span class="brand-logo">🎟️</span>
@@ -61,73 +60,82 @@
       </nav>
 
       <div class="sidebar-footer">
-        <button class="btn-logout" onclick="sessionStorage.clear(); window.location.href='index.html';">🚪 تسجيل
-          الخروج</button>
+        <button class="btn-logout" onclick="doLogout()">🚪 تسجيل الخروج</button>
       </div>
     </aside>
 
+    <!-- المحتوى الرئيسي -->
     <main class="main-content">
 
+      <!-- الهيدر -->
       <header class="main-header">
         <div class="header-title">
           <h1>مرحباً بك في النظام</h1>
-          <p>متابعة لحظية ومزامنة سحابية عالية الأداء</p>
+          <p>متابعة لحظية ومزامنة سحابية</p>
         </div>
         <div class="header-stats">
           <div class="mini-stat">
             <span class="label">إجمالي الدعوات:</span>
-            <span class="val" id="hdr-total">0</span>
+            <span class="val" id="hdr-total">٠</span>
           </div>
           <div class="mini-stat">
             <span class="label">الحاضرون:</span>
-            <span class="val success" id="hdr-entered">0</span>
+            <span class="val success" id="hdr-entered">٠</span>
           </div>
           <div class="mini-stat">
             <span class="label">نسبة الحضور:</span>
-            <span class="val info" id="hdr-pct">0%</span>
+            <span class="val info" id="hdr-pct">٠%</span>
           </div>
         </div>
       </header>
 
+      <!-- ===== لوحة الاستبصار ===== -->
       <section id="panel-dash" class="panel active">
         <div class="stats-grid">
           <div class="stat-card">
             <h3>👥 إجمالي الطلاب</h3>
-            <p class="stat-number" id="d-students">0</p>
+            <p class="stat-number" id="d-students">٠</p>
           </div>
           <div class="stat-card">
             <h3>🎟️ إجمالي الدعوات</h3>
-            <p class="stat-number" id="d-invitations">0</p>
+            <p class="stat-number" id="d-invitations">٠</p>
           </div>
           <div class="stat-card">
             <h3>✅ الحاضرون</h3>
-            <p class="stat-number text-success" id="d-entered">0</p>
-            <span class="stat-sub" id="d-entered-pct">0%</span>
+            <p class="stat-number text-success" id="d-entered">٠</p>
+            <span class="stat-sub" id="d-entered-pct">٠%</span>
           </div>
           <div class="stat-card">
             <h3>⏳ المتبقون</h3>
-            <p class="stat-number text-danger" id="d-pending">0</p>
-            <span class="stat-sub" id="d-pending-pct">0%</span>
+            <p class="stat-number text-danger" id="d-pending">٠</p>
+            <span class="stat-sub" id="d-pending-pct">١٠٠%</span>
           </div>
         </div>
 
         <div class="charts-grid">
           <div class="chart-card">
             <h3>📊 توزيع نسب الحضور</h3>
-            <div class="chart-container" style="position: relative; height:220px;">
+            <div style="position:relative;height:220px;">
               <canvas id="chart-donut"></canvas>
             </div>
           </div>
           <div class="chart-card">
             <h3>📈 منحنى تدفق الدخول الزمني</h3>
-            <div class="chart-container" style="position: relative; height:220px;">
+            <div style="position:relative;height:220px;">
               <canvas id="chart-line"></canvas>
             </div>
           </div>
         </div>
 
         <div class="table-card">
-          <h3>📋 الحالة التفصيلية الفورية للمدعوين</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+            <h3 style="margin:0">📋 الحالة التفصيلية الفورية للمدعوين</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="exportReport()">📄 تصدير تقرير CSV</button>
+              <button class="btn btn-danger" style="font-size:12px;padding:6px 12px" onclick="resetCheckins()">🔄 تصفير الحضور</button>
+              <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="resetSystem()">🗑️ مسح كل البيانات</button>
+            </div>
+          </div>
           <div class="table-responsive">
             <table>
               <thead>
@@ -140,54 +148,104 @@
                 </tr>
               </thead>
               <tbody id="dash-tbody">
+                <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:28px">جاري تحميل البيانات...</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
+      <!-- ===== لوحة المسح ===== -->
       <section id="panel-scan" class="panel">
         <div class="scanner-layout">
           <div class="scanner-control">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:14px">🔍 مسح الباركود</h3>
+
             <div class="mode-toggles">
-              <button id="mode-cam" class="btn active" onclick="setMode('cam')">📷 استخدام الكاميرا</button>
-              <button id="mode-manual" class="btn" onclick="setMode('manual')">⌨️ إدخال يدوي / قارئ خارجي</button>
+              <button id="mode-cam" class="btn btn-primary" onclick="setMode('cam')">📷 استخدام الكاميرا</button>
+              <button id="mode-manual" class="btn btn-ghost" onclick="setMode('manual')">⌨️ إدخال يدوي</button>
             </div>
 
+            <!-- قسم الكاميرا -->
             <div id="cam-section" class="scan-area">
-              <div id="reader"
-                style="width: 100%; max-width: 420px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #f8fafc;">
+              <div id="reader" style="width:100%;max-width:420px;margin:0 auto;border-radius:12px;overflow:hidden;background:#f8fafc;"></div>
+              <div style="display:flex;justify-content:center;gap:10px;margin-top:14px;">
+                <button id="btn-start-cam" class="btn btn-success" onclick="startCamera()">▶️ تشغيل الكاميرا</button>
+                <button id="btn-stop-cam" class="btn btn-danger" style="display:none;" onclick="stopCamera()">⏹️ إيقاف الكاميرا</button>
               </div>
-              <div class="cam-actions"
-                style="text-align:center; margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
-                <button class="btn btn-success" onclick="startCamera()">▶️ تشغيل الكاميرا</button>
-                <button class="btn btn-danger" onclick="stopCamera()">⏹️ إيقاف الكاميرا</button>
-              </div>
+              <p id="cam-status" style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;">الكاميرا متوقفة</p>
             </div>
 
-            <div id="manual-section" class="scan-area" style="display: none;">
+            <!-- قسم الإدخال اليدوي -->
+            <div id="manual-section" class="scan-area" style="display:none;">
               <div class="form-group">
                 <label for="scan-input">انقر هنا ثم امسح الكود عبر القارئ الليزري أو أدخله يدوياً:</label>
-                <input type="text" id="scan-input" placeholder="انتظار قراءة الرمز الفوري..." autocomplete="off">
+                <input type="text" id="scan-input"
+                  placeholder="INV-0000-0-XXXX"
+                  autocomplete="off"
+                  oninput="autoScan(this.value)"
+                  onkeydown="if(event.key==='Enter'){manualScan();}">
               </div>
+              <button class="btn btn-primary" onclick="manualScan()" style="width:100%">🔍 مسح الآن</button>
             </div>
           </div>
 
+          <!-- سجل المسح -->
           <div class="log-card">
-            <h3>⏱️ سجل عمليات المسح المباشر</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <h3 style="margin:0">⏱️ سجل عمليات المسح</h3>
+              <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="clearLog()">🗑️ مسح السجل</button>
+            </div>
             <div id="scan-log" class="log-container">
-              <div class="empty-state">في انتظار بدء عمليات المسح السحابي...</div>
+              <div class="empty-state">
+                <div class="icon">📋</div>
+                <p>في انتظار بدء عمليات المسح...</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
+      <!-- ===== لوحة الطلاب ===== -->
       <section id="panel-students" class="panel">
-        <div class="action-bar" style="margin-bottom: 20px;">
-          <h2>👥 السجل الرئيسي لقاعدة بيانات المدعوين</h2>
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;">👥 السجل الرئيسي للمدعوين</h2>
+
+        <!-- نموذج إضافة طالب -->
+        <div class="add-student-form">
+          <h3>➕ إضافة طالب جديد</h3>
+          <div class="add-row">
+            <input type="text" id="inp-id" placeholder="رقم الطالب (مثال: 1001)" maxlength="20">
+            <input type="text" id="inp-name" placeholder="اسم الطالب بالكامل">
+            <button class="btn btn-primary" onclick="addManual()">✅ إضافة</button>
+          </div>
         </div>
 
-        <div id="students-section" class="table-card" style="display: none;">
+        <!-- رفع CSV -->
+        <div class="add-student-form" style="margin-bottom:16px;">
+          <h3>📂 استيراد من ملف CSV</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+            يجب أن يحتوي الملف على عمودين: <strong>رقم الطالب</strong> و <strong>الاسم</strong> (مع سطر عنوان).
+          </p>
+          <label class="upload-area" for="csv-file">
+            <div class="upload-icon">📤</div>
+            <strong>انقر لرفع ملف CSV</strong>
+            <p>أو اسحب الملف وأفلته هنا</p>
+            <input type="file" id="csv-file" accept=".csv,.txt">
+          </label>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-outline" style="font-size:12px" onclick="loadSample()">🧪 تحميل بيانات تجريبية</button>
+            <button class="btn btn-ghost" style="font-size:12px" onclick="exportCSV()">📥 تصدير CSV</button>
+          </div>
+        </div>
+
+        <!-- جدول الطلاب -->
+        <div id="students-section" class="table-card" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+            <h3 style="margin:0">قائمة الطلاب المسجّلين</h3>
+            <span id="students-count" style="font-size:12px;color:var(--text-muted);background:var(--surface-2);padding:4px 10px;border-radius:20px;border:1px solid var(--border);">
+              ٠ طالب
+            </span>
+          </div>
           <div class="table-responsive">
             <table>
               <thead>
@@ -200,36 +258,48 @@
                   <th>إجراءات</th>
                 </tr>
               </thead>
-              <tbody id="students-tbody">
-              </tbody>
+              <tbody id="students-tbody"></tbody>
             </table>
           </div>
         </div>
       </section>
 
+      <!-- ===== لوحة QR ===== -->
       <section id="panel-qr" class="panel">
         <div class="qr-control-header">
-          <h2>⚡ إدارة وتجهيز رموز الـ QR السحابية</h2>
+          <h2>⚡ إدارة وتجهيز رموز الـ QR</h2>
           <p>يمكنك مراجعة الرموز المتاحة أو تفعيل محرك التوليد لتصدير البطاقات.</p>
+        </div>
 
-          <div id="gen-idle" class="gen-status-box" style="margin: 20px 0;">
-            <button class="btn btn-primary btn-lg" onclick="generateAllQR()">⚡ توليد وإعداد كود الـ QR لكل
-              الطلاب</button>
-          </div>
+        <!-- زر التوليد (يظهر عند عدم وجود QR) -->
+        <div id="gen-idle" style="margin:20px 0;">
+          <button class="btn btn-primary btn-lg" onclick="generateAll()">
+            ⚡ توليد رموز QR لجميع الطلاب
+          </button>
+        </div>
 
-          <div id="gen-actions" class="gen-status-box" style="display: none; gap: 12px; margin: 20px 0;">
-            <button class="btn btn-success" onclick="window.print()">🖨️ طباعة كافة البطاقات</button>
-            <button class="btn btn-secondary" onclick="generateAllQR()">🔄 إعادة مزامنة وتحديث</button>
+        <!-- شريط التقدم أثناء التوليد -->
+        <div id="gen-progress" class="gen-progress-wrap" style="display:none;">
+          <p class="gen-status-text" id="gen-status-text">جاري التوليد...</p>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="gen-pbar" style="width:0%"></div>
           </div>
         </div>
 
-        <div id="qr-preview" class="qr-preview-grid">
+        <!-- أزرار ما بعد التوليد -->
+        <div id="gen-actions" style="display:none;gap:10px;flex-wrap:wrap;margin:16px 0;" class="gen-status-box">
+          <button class="btn btn-success" onclick="printInvitations()">🖨️ طباعة كافة البطاقات</button>
+          <button class="btn btn-secondary btn-outline" onclick="generateAll()">🔄 إعادة توليد</button>
         </div>
+
+        <!-- شبكة معاينة QR -->
+        <div id="qr-preview" class="qr-preview-grid"></div>
       </section>
 
     </main>
   </div>
 
+  <!-- عناصر مخفية للعدادات (يُحدَّث من JS) -->
   <div style="display:none;">
     <span id="cnt-total">0</span>
     <span id="cnt-entered">0</span>
@@ -238,5 +308,4 @@
 
   <script src="app.js" defer></script>
 </body>
-
 </html>

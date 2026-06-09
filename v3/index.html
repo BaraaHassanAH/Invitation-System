@@ -7,11 +7,6 @@
   <link rel="stylesheet" href="style.css">
   <style>
     .index-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
       background-image:
         radial-gradient(ellipse 60% 50% at 30% 10%, rgba(79,134,247,0.16) 0%, transparent 60%),
         radial-gradient(ellipse 50% 40% at 80% 90%, rgba(26,86,219,0.1) 0%, transparent 55%);
@@ -22,10 +17,6 @@
       padding: 40px 36px;
       box-shadow: 0 20px 60px rgba(15,23,42,0.12);
       border: 1px solid #dde4f0;
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
-      animation: fadeUp 0.5s ease;
     }
     .index-logo-wrap {
       width: 72px; height: 72px;
@@ -57,7 +48,7 @@
 
       <div class="error-msg" id="error-message">❌ اسم المستخدم أو كلمة المرور غير صحيحة!</div>
 
-      <form id="index-form" onsubmit="handleLogin(event)">
+      <form id="index-form" onsubmit="handleIndex(event)">
         <div class="form-group">
           <label for="username">اسم المستخدم</label>
           <input type="text" id="username" required placeholder="أدخل اسم المستخدم" autocomplete="username">
@@ -76,27 +67,24 @@
   </div>
 
   <script>
-    // إذا كان المستخدم مسجّل الدخول بالفعل، انتقل مباشرة
-    if (sessionStorage.getItem('isLoggedIn') === 'true') {
-      window.location.replace('invitation_system_1.html');
-    }
-
-    function handleLogin(event) {
+    function handleIndex(event) {
       event.preventDefault();
       const user = document.getElementById('username').value.trim();
       const pass = document.getElementById('password').value;
       const errMsg = document.getElementById('error-message');
 
-      if (user === 'admin' && pass === 'admin123') {
+      if (user === "admin" && pass === "admin123") {
         sessionStorage.setItem('isLoggedIn', 'true');
         window.location.href = 'invitation_system_1.html';
       } else {
         errMsg.style.display = 'block';
         document.getElementById('password').value = '';
         document.getElementById('password').focus();
-        // إخفاء الرسالة تلقائياً بعد 4 ثواني
-        setTimeout(() => { errMsg.style.display = 'none'; }, 4000);
       }
+    }
+
+    if (sessionStorage.getItem('isLoggedIn') === 'true') {
+      window.location.href = 'invitation_system_1.html';
     }
   </script>
 </body>
