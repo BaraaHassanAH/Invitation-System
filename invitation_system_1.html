@@ -124,133 +124,134 @@
           </div>
         </div>
 
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-          <h3 style="margin:0">📋 الحالة التفصيلية الفورية للمدعوين</h3>
+        <div class="table-card">
+          <div
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+            <h3 style="margin:0">📋 الحالة التفصيلية الفورية للمدعوين</h3>
 
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="exportReport()">
-              📄 تصدير تقرير CSV
-            </button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="exportReport()">
+                📄 تصدير تقرير CSV
+              </button>
 
-            <button class="btn btn-danger" style="font-size:12px;padding:6px 12px" onclick="resetCheckins()">
-              🔄 تصفير الحضور
-            </button>
+              <button class="btn btn-danger" style="font-size:12px;padding:6px 12px" onclick="resetCheckins()">
+                🔄 تصفير الحضور
+              </button>
 
-            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="resetSystem()">
-              🗑️ مسح كل البيانات
-            </button>
-            <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="exportScanLog()">
-              📝 تصدير سجل المسح
-            </button>
+              <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="resetSystem()">
+                🗑️ مسح كل البيانات
+              </button>
+              <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="exportScanLog()">
+                📝 تصدير سجل المسح
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>رقم الطالب</th>
+                  <th>الاسم</th>
+                  <th>الدعوة الأولى</th>
+                  <th>الدعوة الثانية</th>
+                  <th>حالة الحضور</th>
+                </tr>
+              </thead>
+              <tbody id="dash-tbody">
+              </tbody>
+            </table>
           </div>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>رقم الطالب</th>
-                <th>الاسم</th>
-                <th>الدعوة الأولى</th>
-                <th>الدعوة الثانية</th>
-                <th>حالة الحضور</th>
-              </tr>
-            </thead>
-            <tbody id="dash-tbody">
-            </tbody>
-          </table>
-        </div>
-  </div>
-  </section>
+      </section>
 
-  <section id="panel-scan" class="panel">
-    <div class="scanner-layout">
-      <div class="scanner-control">
-        <div class="mode-toggles">
-          <button id="mode-cam" class="btn active" onclick="setMode('cam')">📷 استخدام الكاميرا</button>
-          <button id="mode-manual" class="btn" onclick="setMode('manual')">⌨️ إدخال يدوي / قارئ خارجي</button>
-        </div>
+      <section id="panel-scan" class="panel">
+        <div class="scanner-layout">
+          <div class="scanner-control">
+            <div class="mode-toggles">
+              <button id="mode-cam" class="btn active" onclick="setMode('cam')">📷 استخدام الكاميرا</button>
+              <button id="mode-manual" class="btn" onclick="setMode('manual')">⌨️ إدخال يدوي / قارئ خارجي</button>
+            </div>
 
-        <div id="cam-section" class="scan-area">
-          <div id="reader"
-            style="width: 100%; max-width: 420px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #f8fafc;">
+            <div id="cam-section" class="scan-area">
+              <div id="reader"
+                style="width: 100%; max-width: 420px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #f8fafc;">
+              </div>
+              <div class="cam-actions"
+                style="text-align:center; margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
+                <button class="btn btn-success" onclick="startCamera()">▶️ تشغيل الكاميرا</button>
+                <button class="btn btn-danger" onclick="stopCamera()">⏹️ إيقاف الكاميرا</button>
+              </div>
+            </div>
+
+            <div id="manual-section" class="scan-area" style="display: none;">
+              <div class="form-group">
+                <label for="scan-input">انقر هنا ثم امسح الكود عبر القارئ الليزري أو أدخله يدوياً:</label>
+                <input type="text" id="scan-input" placeholder="انتظار قراءة الرمز الفوري..." autocomplete="off">
+              </div>
+            </div>
           </div>
-          <div class="cam-actions"
-            style="text-align:center; margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
-            <button class="btn btn-success" onclick="startCamera()">▶️ تشغيل الكاميرا</button>
-            <button class="btn btn-danger" onclick="stopCamera()">⏹️ إيقاف الكاميرا</button>
-          </div>
-        </div>
 
-        <div id="manual-section" class="scan-area" style="display: none;">
-          <div class="form-group">
-            <label for="scan-input">انقر هنا ثم امسح الكود عبر القارئ الليزري أو أدخله يدوياً:</label>
-            <input type="text" id="scan-input" placeholder="انتظار قراءة الرمز الفوري..." autocomplete="off">
+          <div class="log-card">
+            <h3>⏱️ سجل عمليات المسح المباشر</h3>
+            <div id="scan-log" class="log-container">
+              <div class="empty-state">في انتظار بدء عمليات المسح السحابي...</div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="log-card">
-        <h3>⏱️ سجل عمليات المسح المباشر</h3>
-        <div id="scan-log" class="log-container">
-          <div class="empty-state">في انتظار بدء عمليات المسح السحابي...</div>
+      <section id="panel-students" class="panel">
+        <div class="action-bar" style="margin-bottom: 20px;">
+          <h2>👥 السجل الرئيسي لقاعدة بيانات المدعوين</h2>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <section id="panel-students" class="panel">
-    <div class="action-bar" style="margin-bottom: 20px;">
-      <h2>👥 السجل الرئيسي لقاعدة بيانات المدعوين</h2>
-    </div>
+        <div id="students-section" class="table-card">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>رقم الطالب</th>
+                  <th>اسم الطالب بالكامل</th>
+                  <th>كود الدعوة 1</th>
+                  <th>كود الدعوة 2</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="students-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-    <div id="students-section" class="table-card">
-      <div class="table-responsive">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>رقم الطالب</th>
-              <th>اسم الطالب بالكامل</th>
-              <th>كود الدعوة 1</th>
-              <th>كود الدعوة 2</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="students-tbody">
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
+      <section id="panel-qr" class="panel">
+        <div class="qr-control-header">
+          <h2>⚡ إدارة وتجهيز رموز الـ QR السحابية</h2>
+          <p>يمكنك مراجعة الرموز المتاحة أو تفعيل محرك التوليد لتصدير البطاقات.</p>
+        </div>
 
-  <section id="panel-qr" class="panel">
-    <div class="qr-control-header">
-      <h2>⚡ إدارة وتجهيز رموز الـ QR السحابية</h2>
-      <p>يمكنك مراجعة الرموز المتاحة أو تفعيل محرك التوليد لتصدير البطاقات.</p>
-    </div>
+        <div id="gen-idle" class="gen-status-box" style="margin: 20px 0;">
+          <button class="btn btn-primary btn-lg" onclick="generateAll()">⚡ توليد رموز QR لجميع الطلاب</button>
+        </div>
 
-    <div id="gen-idle" class="gen-status-box" style="margin: 20px 0;">
-      <button class="btn btn-primary btn-lg" onclick="generateAll()">⚡ توليد رموز QR لجميع الطلاب</button>
-    </div>
+        <div id="gen-progress" class="gen-progress-wrap" style="display:none;">
+          <p class="gen-status-text" id="gen-status-text">جاري التوليد وإرسال البيانات للسحابة...</p>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="gen-pbar" style="width:0%"></div>
+          </div>
+        </div>
 
-    <div id="gen-progress" class="gen-progress-wrap" style="display:none;">
-      <p class="gen-status-text" id="gen-status-text">جاري التوليد وإرسال البيانات للسحابة...</p>
-      <div class="progress-bar-wrap">
-        <div class="progress-bar" id="gen-pbar" style="width:0%"></div>
-      </div>
-    </div>
+        <div id="gen-actions" class="gen-status-box" style="display: none; gap: 10px; flex-wrap: wrap; margin: 16px 0;">
+          <button class="btn btn-success" onclick="printInvitations()">🖨️ طباعة كافة البطاقات</button>
+          <button class="btn btn-secondary" onclick="generateAll()">🔄 إعادة توليد وتحديث</button>
+        </div>
 
-    <div id="gen-actions" class="gen-status-box" style="display: none; gap: 10px; flex-wrap: wrap; margin: 16px 0;">
-      <button class="btn btn-success" onclick="printInvitations()">🖨️ طباعة كافة البطاقات</button>
-      <button class="btn btn-secondary" onclick="generateAll()">🔄 إعادة توليد وتحديث</button>
-    </div>
+        <div id="qr-preview" class="qr-preview-grid">
+        </div>
+      </section>
 
-    <div id="qr-preview" class="qr-preview-grid">
-    </div>
-  </section>
-
-  </main>
+    </main>
   </div>
 
   <div style="display:none;">
