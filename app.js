@@ -902,7 +902,6 @@ window.generateAll = async function () {
     el('gen-idle') && (el('gen-idle').style.display = 'none');
     el('gen-progress') && (el('gen-progress').style.display = 'block');
     el('qr-preview') && (el('qr-preview').innerHTML = '');
-
     const total = students.length * 2;
     let done = 0;
 
