@@ -297,30 +297,26 @@ async function doScan(rawCode) {
     }
 
     try {
-        const { data: invData, error } = await supabaseClient
-            .from('invitations')
-            .select('*, students(name)')
-            .eq('code', code)
-            .single();
+        const { data, error } = await supabaseClient.rpc('check_in_invitation', { p_code: code });
 
-        if (error || !invData) {
+        if (error || !data || !data.status || data.status === 'invalid') {
             playBeep('invalid');
             showResultOverlay('invalid', {});
             addToLog(code, 'باركود غير صالح', '—', 'bad', timeStr);
             return;
         }
 
-        const studentName = invData.students ? invData.students.name : '—';
+        const studentName = data.name || '—';
 
-        if (invData.used) {
-            const usedAt = invData.used_at
-                ? new Date(invData.used_at).toLocaleTimeString('ar-SA')
+        if (data.status === 'duplicate') {
+            const usedAt = data.used_at
+                ? new Date(data.used_at).toLocaleTimeString('ar-SA')
                 : timeStr;
             playBeep('duplicate');
             showResultOverlay('duplicate', {
-                studentId: invData.student_id,
+                studentId: data.student_id,
                 name: studentName,
-                invNum: invData.inv_num,
+                invNum: data.inv_num,
                 usedAt
             });
             addToLog(code, 'دعوة مكرّرة', studentName, 'dup', timeStr);
@@ -329,16 +325,9 @@ async function doScan(rawCode) {
             if (invitations[code]) invitations[code].used = true;
 
         } else {
-            const isoNow = new Date().toISOString();
-            const { error: updErr } = await supabaseClient
-                .from('invitations')
-                .update({ used: true, used_at: isoNow })
-                .eq('code', code);
-            if (updErr) throw updErr;
-
-            // تحديث الحالة المحلية
+            // status === 'success'
             if (!invitations[code]) {
-                invitations[code] = { studentId: invData.student_id, name: studentName, invNum: invData.inv_num };
+                invitations[code] = { studentId: data.student_id, name: studentName, invNum: data.inv_num };
             }
             invitations[code].used = true;
             invitations[code].usedAt = timeStr;

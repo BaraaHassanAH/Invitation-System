@@ -18,7 +18,7 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      transition: background 0.2s ease;
+      transition: background 0.5s ease;
       background-image:
         radial-gradient(ellipse 60% 50% at 30% 10%, rgba(79, 134, 247, 0.16) 0%, transparent 60%),
         radial-gradient(ellipse 50% 40% at 80% 90%, rgba(26, 86, 219, 0.1) 0%, transparent 55%);
@@ -69,9 +69,7 @@
     }
 
     @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+      to { transform: rotate(360deg); }
     }
 
     .scan-retry {
@@ -88,10 +86,7 @@
       cursor: pointer;
       transition: var(--transition);
     }
-
-    .scan-retry:hover {
-      filter: brightness(1.08);
-    }
+    .scan-retry:hover { filter: brightness(1.08); }
 
     .scan-footer {
       text-align: center;
@@ -99,10 +94,7 @@
       color: rgba(255, 255, 255, 0.55);
       margin-top: 18px;
     }
-
-    .state-loading .scan-footer {
-      color: var(--text-light);
-    }
+    .state-loading .scan-footer { color: var(--text-light); }
   </style>
 </head>
 
@@ -207,49 +199,37 @@
       }
 
       try {
-        const { data: invData, error } = await supabaseClient
-          .from('invitations')
-          .select('*, students(name)')
-          .eq('code', code)
-          .single();
+        const { data, error } = await supabaseClient.rpc('check_in_invitation', { p_code: code });
 
-        if (error || !invData) {
+        if (error || !data || !data.status) {
           setState('invalid', { code });
           return;
         }
 
-        const studentName = invData.students ? invData.students.name : '—';
+        if (data.status === 'invalid') {
+          setState('invalid', { code });
+          return;
+        }
 
-        if (invData.used) {
-          const usedAt = invData.used_at
-            ? new Date(invData.used_at).toLocaleTimeString('ar-SA')
+        if (data.status === 'duplicate') {
+          const usedAt = data.used_at
+            ? new Date(data.used_at).toLocaleTimeString('ar-SA')
             : null;
 
           setState('duplicate', {
-            name: studentName,
-            studentId: invData.student_id,
-            invNum: invData.inv_num,
+            name: data.name,
+            studentId: data.student_id,
+            invNum: data.inv_num,
             usedAt,
             code
           });
           return;
         }
 
-        const isoNow = new Date().toISOString();
-        const { error: updErr } = await supabaseClient
-          .from('invitations')
-          .update({ used: true, used_at: isoNow })
-          .eq('code', code);
-
-        if (updErr) {
-          setState('invalid', { message: 'تعذر تسجيل الحضور، حاول مجدداً', code });
-          return;
-        }
-
         setState('success', {
-          name: studentName,
-          studentId: invData.student_id,
-          invNum: invData.inv_num,
+          name: data.name,
+          studentId: data.student_id,
+          invNum: data.inv_num,
           code
         });
 
