@@ -18,7 +18,7 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      transition: background 0.5s ease;
+      transition: background 0.2s ease;
       background-image:
         radial-gradient(ellipse 60% 50% at 30% 10%, rgba(79, 134, 247, 0.16) 0%, transparent 60%),
         radial-gradient(ellipse 50% 40% at 80% 90%, rgba(26, 86, 219, 0.1) 0%, transparent 55%);
@@ -69,7 +69,9 @@
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .scan-retry {
@@ -86,7 +88,10 @@
       cursor: pointer;
       transition: var(--transition);
     }
-    .scan-retry:hover { filter: brightness(1.08); }
+
+    .scan-retry:hover {
+      filter: brightness(1.08);
+    }
 
     .scan-footer {
       text-align: center;
@@ -94,7 +99,10 @@
       color: rgba(255, 255, 255, 0.55);
       margin-top: 18px;
     }
-    .state-loading .scan-footer { color: var(--text-light); }
+
+    .state-loading .scan-footer {
+      color: var(--text-light);
+    }
   </style>
 </head>
 
