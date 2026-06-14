@@ -84,49 +84,6 @@ function genCode(studentId, num) {
     return `INV-${String(studentId).padStart(4, '0')}-${num}-${suffix}`;
 }
 
-// ======= رابط المسح (يُستخدم داخل رمز QR لكي يعمل مع كاميرا الجوال العادية) =======
-function getScanUrl(code) {
-    // يبني رابطاً مطلقاً يعتمد على نطاق الاستضافة الحالي
-    return `${window.location.origin}/scan.html?code=${encodeURIComponent(code)}`;
-}
-
-// ======= استخراج رمز الدعوة من القيمة المقروءة (نص خام أو رابط) =======
-function extractCode(raw) {
-    const value = (raw || '').trim();
-    try {
-        const url = new URL(value);
-        const codeParam = url.searchParams.get('code');
-        if (codeParam) return codeParam.trim();
-    } catch (e) {
-        // ليس رابطاً، استخدم القيمة كما هي
-    }
-    return value;
-}
-
-// ======= نسخ رابط الدعوة إلى الحافظة =======
-window.copyInviteLink = async function (code, btn) {
-    const url = getScanUrl(code);
-    try {
-        await navigator.clipboard.writeText(url);
-    } catch (e) {
-        // طريقة احتياطية في حال عدم دعم الحافظة
-        const ta = document.createElement('textarea');
-        ta.value = url;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); } catch (e2) { }
-        document.body.removeChild(ta);
-    }
-
-    if (btn) {
-        const original = btn.textContent;
-        btn.textContent = '✅ تم النسخ';
-        setTimeout(() => { btn.textContent = original; }, 1500);
-    }
-};
-
 // ======= تحميل البيانات من Supabase =======
 async function loadState() {
     if (!supabaseClient) {
@@ -279,10 +236,7 @@ function stopCamera() {
 }
 
 // ======= منطق المسح الرئيسي =======
-async function doScan(rawCode) {
-    const code = extractCode(rawCode);
-    if (!code) return;
-
+async function doScan(code) {
     const now = Date.now();
     if (code === lastScanned && now - lastScanTime < 2500) return;
     lastScanned = code;
@@ -515,18 +469,8 @@ function renderStudentsTable() {
           <td>${i + 1}</td>
           <td><span class="badge badge-info">${s.id}</span></td>
           <td><strong>${s.name}</strong></td>
-          <td>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:10px;font-family:monospace;color:var(--text-muted)">${s.inv1 || '—'}</span>
-              <button class="btn btn-outline" style="padding:2px 8px;font-size:10px" onclick="copyInviteLink('${s.inv1}', this)" title="نسخ رابط الدعوة">🔗</button>
-            </div>
-          </td>
-          <td>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:10px;font-family:monospace;color:var(--text-muted)">${s.inv2 || '—'}</span>
-              <button class="btn btn-outline" style="padding:2px 8px;font-size:10px" onclick="copyInviteLink('${s.inv2}', this)" title="نسخ رابط الدعوة">🔗</button>
-            </div>
-          </td>
+          <td style="font-size:10px;font-family:monospace;color:var(--text-muted)">${s.inv1 || '—'}</td>
+          <td style="font-size:10px;font-family:monospace;color:var(--text-muted)">${s.inv2 || '—'}</td>
           <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="removeStudent(${i})">🗑️ حذف</button></td>
         </tr>`).join('') ||
         '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">لا يوجد طلاب مسجّلون بعد</td></tr>';
@@ -569,13 +513,6 @@ function renderQRPlaceholders() {
             badge.textContent = 'دعوة ' + (num === 1 ? 'الأولى' : 'الثانية');
             bwrap.appendChild(badge);
             card.appendChild(nameDiv); card.appendChild(idDiv); card.appendChild(bwrap);
-
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'btn btn-outline qr-copy-btn';
-            copyBtn.textContent = '🔗 نسخ رابط الدعوة';
-            copyBtn.onclick = () => window.copyInviteLink(code, copyBtn);
-            card.appendChild(copyBtn);
-
             previewEl.appendChild(card);
         });
     });
@@ -930,7 +867,7 @@ async function generateQRBase64(text) {
         document.body.appendChild(container);
         try {
             new QRCode(container, {
-                text, width: 240, height: 240,
+                text, width: 200, height: 200,
                 colorDark: '#1a3a8f', colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.M
             });
@@ -971,7 +908,7 @@ window.generateAll = async function () {
     for (const s of students) {
         for (const num of [1, 2]) {
             const code = s['inv' + num];
-            const base64 = await generateQRBase64(getScanUrl(code));
+            const base64 = await generateQRBase64(code);
             s['qr' + num + '_base64'] = base64;
 
             const card = document.createElement('div');
@@ -996,13 +933,6 @@ window.generateAll = async function () {
             badge.textContent = 'دعوة ' + (num === 1 ? 'الأولى' : 'الثانية');
             bwrap.appendChild(badge);
             card.appendChild(nameDiv); card.appendChild(idDiv); card.appendChild(bwrap);
-
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'btn btn-outline qr-copy-btn';
-            copyBtn.textContent = '🔗 نسخ رابط الدعوة';
-            copyBtn.onclick = () => window.copyInviteLink(code, copyBtn);
-            card.appendChild(copyBtn);
-
             el('qr-preview') && el('qr-preview').appendChild(card);
 
             done++;

@@ -341,14 +341,6 @@ tbody tr:hover td { background: #f8faff; }
 }
 .qr-card .name { font-size: 11.5px; font-weight: 700; color: #1e293b; margin-top: 6px; }
 .qr-card .inv-id { font-size: 9.5px; font-family: monospace; color: var(--primary); margin-top: 3px; letter-spacing: 0.5px; }
-.qr-copy-btn {
-  display: flex;
-  width: 100%;
-  justify-content: center;
-  margin-top: 10px;
-  font-size: 10.5px;
-  padding: 6px 8px;
-}
 
 .section-actions {
   display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px;
