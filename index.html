@@ -32,17 +32,26 @@
       width: 100%;
       text-align: center;
       animation: fadeUp 0.5s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .index-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; left: 0;
+      height: 5px;
+      background: linear-gradient(90deg, #1a56db 0%, #f59e0b 50%, #1a56db 100%);
     }
 
     .index-logo-wrap {
       width: 72px;
       height: 72px;
-      background: linear-gradient(135deg, #1a56db, #1341b0);
       border-radius: 18px;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 34px;
       margin: 0 auto 18px;
       box-shadow: 0 8px 24px rgba(26, 86, 219, 0.3);
     }
@@ -50,7 +59,10 @@
     .index-title {
       font-size: 21px;
       font-weight: 800;
-      color: #0f172a;
+      background: linear-gradient(135deg, #0f172a 20%, #1341b0 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
       margin-bottom: 4px;
     }
 
@@ -101,7 +113,7 @@
 <body>
   <div class="index-wrapper">
     <div class="index-card">
-      <div class="index-logo-wrap">🎓</div>
+      <div class="index-logo-wrap"><img src="logo.png" alt="شعار النظام" class="index-logo-img"></div>
       <h2 class="index-title">نظام الدعوات الإلكترونية</h2>
       <p class="index-sub">يرجى تسجيل الدخول للمتابعة إلى لوحة التحكم</p>
 
