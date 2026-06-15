@@ -20,9 +20,14 @@
 <body>
 
   <script>
-    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-      window.location.replace('index.html');
-    }
+    // فحص سريع: إن لم يوجد رمز جلسة Supabase محفوظ محلياً، انتقل لصفحة الدخول فوراً
+    // (يمنع ظهور لوحة التحكم لحظياً قبل التحقق الكامل)
+    (function () {
+      const hasSession = Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+      if (!hasSession) {
+        window.location.replace('index.html');
+      }
+    })();
   </script>
 
   <div class="result-overlay" id="result-overlay" onclick="dismissResult()">
@@ -62,7 +67,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <button class="btn-logout" onclick="sessionStorage.clear(); window.location.replace('index.html');">🚪 تسجيل
+        <button class="btn-logout" onclick="doLogout()">🚪 تسجيل
           الخروج</button>
       </div>
     </aside>

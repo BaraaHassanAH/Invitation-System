@@ -1092,13 +1092,28 @@ window.printInvitations = function () {
 // ======= تسجيل الخروج =======
 window.doLogout = function () {
     stopCamera();
+    if (supabaseClient) supabaseClient.auth.signOut();
     sessionStorage.clear();
     window.location.href = 'index.html';
 };
 
 // ======= التهيئة عند تحميل الصفحة =======
 document.addEventListener('DOMContentLoaded', () => {
-    loadState().then(() => {
+    (async function initWithAuthGuard() {
+        if (supabaseClient) {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.replace('index.html');
+                return;
+            }
+
+            // إعادة التوجيه التلقائي عند انتهاء الجلسة أو تسجيل الخروج من تبويب آخر
+            supabaseClient.auth.onAuthStateChange((event, newSession) => {
+                if (!newSession) window.location.replace('index.html');
+            });
+        }
+
+        loadState().then(() => {
         if (Object.keys(invitations).length === 0) {
             renderDonut(0, 1);
             renderLine();
@@ -1198,4 +1213,5 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     });
+    })();
 });

@@ -9,6 +9,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
   <link rel="shortcut icon" href="favicon.ico">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <style>
     .index-wrapper {
       display: flex;
@@ -74,6 +75,26 @@
       margin-top: 18px;
       text-align: center;
     }
+
+    .login-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .login-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2.5px solid rgba(255, 255, 255, 0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      display: inline-block;
+      animation: loginSpin 0.7s linear infinite;
+      margin-left: 8px;
+    }
+
+    @keyframes loginSpin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
@@ -84,47 +105,76 @@
       <h2 class="index-title">نظام الدعوات الإلكترونية</h2>
       <p class="index-sub">يرجى تسجيل الدخول للمتابعة إلى لوحة التحكم</p>
 
-      <div class="error-msg" id="error-message">❌ اسم المستخدم أو كلمة المرور غير صحيحة!</div>
+      <div class="error-msg" id="error-message">❌ البريد الإلكتروني أو كلمة المرور غير صحيحة!</div>
 
       <form id="index-form" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label for="username">اسم المستخدم</label>
-          <input type="text" id="username" required placeholder="أدخل اسم المستخدم" autocomplete="username">
+          <label for="username">البريد الإلكتروني</label>
+          <input type="email" id="username" required placeholder="admin@yourevent.com" autocomplete="username">
         </div>
         <div class="form-group">
           <label for="password">كلمة المرور</label>
           <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
         </div>
-        <button type="submit" class="btn btn-primary login-submit">
+        <button type="submit" class="btn btn-primary login-submit" id="login-btn">
           🔓 تسجيل الدخول
         </button>
       </form>
-
-      <!--p class="login-footer">بيانات الدخول الافتراضية: admin / admin123</p-->
     </div>
   </div>
 
   <script>
-    // إذا كان المستخدم مسجّل الدخول بالفعل، انتقل مباشرة
-    if (sessionStorage.getItem('isLoggedIn') === 'true') {
-      window.location.replace('invitation_system_1.html');
+    const SUPABASE_URL = "https://gpaqcfhswfnudpqlxcfs.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_WiQrWKnOxv0RZKLVgFChXQ_1Sb2LRRq";
+
+    const supabaseClient = (window.supabase && window.supabase.createClient)
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    // إذا كان المستخدم مسجّل الدخول بالفعل (جلسة فعّالة)، انتقل مباشرة
+    if (supabaseClient) {
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (session) window.location.replace('invitation_system_1.html');
+      });
     }
 
-    function handleLogin(event) {
+    function translateAuthError(message) {
+      if (!message) return 'حدث خطأ غير متوقع، حاول مجدداً';
+      if (message.includes('Invalid login credentials')) return '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة!';
+      if (message.includes('Email not confirmed')) return '❌ هذا البريد غير مؤكد، يرجى تأكيده من Supabase أولاً';
+      if (message.includes('Too many requests')) return '❌ محاولات كثيرة، يرجى الانتظار قليلاً والمحاولة مجدداً';
+      return '❌ ' + message;
+    }
+
+    async function handleLogin(event) {
       event.preventDefault();
-      const user = document.getElementById('username').value.trim();
+
+      if (!supabaseClient) {
+        alert('تعذر الاتصال بخدمة المصادقة. تحقق من الإنترنت.');
+        return;
+      }
+
+      const email = document.getElementById('username').value.trim();
       const pass = document.getElementById('password').value;
       const errMsg = document.getElementById('error-message');
+      const btn = document.getElementById('login-btn');
 
-      if (user === 'admin' && pass === 'admin123') {
-        sessionStorage.setItem('isLoggedIn', 'true');
-        window.location.href = 'invitation_system_1.html';
-      } else {
+      errMsg.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = 'جاري تسجيل الدخول... <span class="login-spinner"></span>';
+
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+
+      if (error) {
+        errMsg.textContent = translateAuthError(error.message);
         errMsg.style.display = 'block';
         document.getElementById('password').value = '';
         document.getElementById('password').focus();
-        // إخفاء الرسالة تلقائياً بعد 4 ثواني
-        setTimeout(() => { errMsg.style.display = 'none'; }, 4000);
+        btn.disabled = false;
+        btn.innerHTML = '🔓 تسجيل الدخول';
+        setTimeout(() => { errMsg.style.display = 'none'; }, 5000);
+      } else {
+        window.location.href = 'invitation_system_1.html';
       }
     }
   </script>
