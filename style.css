@@ -1008,3 +1008,35 @@ tbody tr:hover td { background: #f8faff; }
   from { transform: scale(0.4) rotate(-12deg); opacity: 0; }
   to   { transform: scale(1) rotate(0deg); opacity: 1; }
 }
+
+/* ===================================================== */
+/* ===== حركات الانتقال بين الصفحات وعند التحميل ===== */
+/* ===================================================== */
+
+/* تلاشي ناعم عند تحميل أي صفحة (يعمل في كل المتصفحات) */
+body {
+  animation: pageFadeIn 0.45s ease both;
+}
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* انتقال سلس بين الصفحات (Chrome/Edge الحديثة) - تجاهل تلقائي في باقي المتصفحات */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: pageTransitionOut 0.32s ease-in both;
+}
+::view-transition-new(root) {
+  animation: pageTransitionIn 0.32s ease-out both;
+}
+@keyframes pageTransitionOut {
+  to   { opacity: 0; transform: scale(0.98); }
+}
+@keyframes pageTransitionIn {
+  from { opacity: 0; transform: scale(1.02); }
+  to   { opacity: 1; transform: scale(1); }
+}
