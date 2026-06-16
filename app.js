@@ -1,7 +1,3 @@
-/* =====================================================
-   app.js – نظام الدعوات الإلكترونية (النسخة المُصلَحة)
-   ===================================================== */
-
 // ======= إعدادات Supabase =======
 const SUPABASE_URL = "https://gpaqcfhswfnudpqlxcfs.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_WiQrWKnOxv0RZKLVgFChXQ_1Sb2LRRq";
@@ -1114,104 +1110,104 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         loadState().then(() => {
-        if (Object.keys(invitations).length === 0) {
-            renderDonut(0, 1);
-            renderLine();
-        }
-        renderDashTable();
-        // ====== دوال التحكم بالنافذة المنبثقة لإضافة الطالب ======
-
-        window.openAddStudentModal = function () {
-            const modal = document.getElementById('add-student-modal');
-            if (modal) {
-                // تصفير الحقول قبل الفتح
-                if (document.getElementById('inp-id')) document.getElementById('inp-id').value = '';
-                if (document.getElementById('inp-name')) document.getElementById('inp-name').value = '';
-                modal.style.display = 'flex';
+            if (Object.keys(invitations).length === 0) {
+                renderDonut(0, 1);
+                renderLine();
             }
-        };
+            renderDashTable();
+            // ====== دوال التحكم بالنافذة المنبثقة لإضافة الطالب ======
 
-        window.closeAddStudentModal = function () {
-            const modal = document.getElementById('add-student-modal');
-            if (modal) modal.style.display = 'none';
-        };
+            window.openAddStudentModal = function () {
+                const modal = document.getElementById('add-student-modal');
+                if (modal) {
+                    // تصفير الحقول قبل الفتح
+                    if (document.getElementById('inp-id')) document.getElementById('inp-id').value = '';
+                    if (document.getElementById('inp-name')) document.getElementById('inp-name').value = '';
+                    modal.style.display = 'flex';
+                }
+            };
 
-        // دالة إرسال البيانات وحفظها
-        window.submitManualStudent = async function () {
-            const idEl = document.getElementById('inp-id');
-            const nameEl = document.getElementById('inp-name');
-            if (!idEl || !nameEl) return;
+            window.closeAddStudentModal = function () {
+                const modal = document.getElementById('add-student-modal');
+                if (modal) modal.style.display = 'none';
+            };
 
-            const id = idEl.value.trim();
-            const name = nameEl.value.trim();
+            // دالة إرسال البيانات وحفظها
+            window.submitManualStudent = async function () {
+                const idEl = document.getElementById('inp-id');
+                const nameEl = document.getElementById('inp-name');
+                if (!idEl || !nameEl) return;
 
-            if (!id || !name) {
-                alert('يرجى إدخال رقم الطالب والاسم أولاً!');
-                return;
-            }
+                const id = idEl.value.trim();
+                const name = nameEl.value.trim();
 
-            // استدعاء دالة الإضافة الأساسية المرتبطة بـ Supabase والموجودة مسبقاً في كودك
-            await addStudent(id, name, true);
+                if (!id || !name) {
+                    alert('يرجى إدخال رقم الطالب والاسم أولاً!');
+                    return;
+                }
 
-            // إغلاق النافذة بعد النجاح
-            closeAddStudentModal();
-        };
+                // استدعاء دالة الإضافة الأساسية المرتبطة بـ Supabase والموجودة مسبقاً في كودك
+                await addStudent(id, name, true);
+
+                // إغلاق النافذة بعد النجاح
+                closeAddStudentModal();
+            };
 
 
-        // ====== دالة حذف جميع الطلاب من قاعدة البيانات (Supabase) ======
+            // ====== دالة حذف جميع الطلاب من قاعدة البيانات (Supabase) ======
 
-        window.deleteAllStudents = async function () {
-            if (!supabaseClient) {
-                alert("اتصال Supabase غير مهيأ.");
-                return;
-            }
+            window.deleteAllStudents = async function () {
+                if (!supabaseClient) {
+                    alert("اتصال Supabase غير مهيأ.");
+                    return;
+                }
 
-            // تأكيد أمني مضاعف لمنع الحذف بالخطأ
-            const confirm1 = confirm("⚠️ تنبيه هام جداً:\nهل أنت متأكد تماماً من رغبتك في حذف جـمـيـع الطلاب المضافين وكافة دعواتهم من النظام؟");
-            if (!confirm1) return;
+                // تأكيد أمني مضاعف لمنع الحذف بالخطأ
+                const confirm1 = confirm("⚠️ تنبيه هام جداً:\nهل أنت متأكد تماماً من رغبتك في حذف جـمـيـع الطلاب المضافين وكافة دعواتهم من النظام؟");
+                if (!confirm1) return;
 
-            const confirm2 = confirm("🚨 إجراء نهائي ولا يمكن التراجع عنه!\nاضغط موافق للتأكيد النهائي وحذف قاعدة البيانات بالكامل.");
-            if (!confirm2) return;
+                const confirm2 = confirm("🚨 إجراء نهائي ولا يمكن التراجع عنه!\nاضغط موافق للتأكيد النهائي وحذف قاعدة البيانات بالكامل.");
+                if (!confirm2) return;
 
-            try {
-                showLoading(true);
+                try {
+                    showLoading(true);
 
-                // 1. حذف جميع الدعوات أولاً بسبب ربط العلاقات (Foreign Keys)
-                const { error: invError } = await supabaseClient
-                    .from('invitations')
-                    .delete()
-                    .neq('code', '0'); // شرط لحذف الكل
+                    // 1. حذف جميع الدعوات أولاً بسبب ربط العلاقات (Foreign Keys)
+                    const { error: invError } = await supabaseClient
+                        .from('invitations')
+                        .delete()
+                        .neq('code', '0'); // شرط لحذف الكل
 
-                if (invError) throw invError;
+                    if (invError) throw invError;
 
-                // 2. حذف جميع الطلاب
-                const { error: stdError } = await supabaseClient
-                    .from('students')
-                    .delete()
-                    .neq('id', '0'); // شرط لحذف الكل
+                    // 2. حذف جميع الطلاب
+                    const { error: stdError } = await supabaseClient
+                        .from('students')
+                        .delete()
+                        .neq('id', '0'); // شرط لحذف الكل
 
-                if (stdError) throw stdError;
+                    if (stdError) throw stdError;
 
-                alert("🗑️ تم حذف جميع الطلاب ورموز الدعوات بنجاح من قاعدة البيانات سحابياً.");
+                    alert("🗑️ تم حذف جميع الطلاب ورموز الدعوات بنجاح من قاعدة البيانات سحابياً.");
 
-                // تحديث مصفوفات النظام محلياً وإعادة بناء الواجهة ورسم المخططات
-                students = [];
-                invitations = {};
-                scanLog = [];
-                entryTimeline = [];
+                    // تحديث مصفوفات النظام محلياً وإعادة بناء الواجهة ورسم المخططات
+                    students = [];
+                    invitations = {};
+                    scanLog = [];
+                    entryTimeline = [];
 
-                renderStudents();
-                renderLog();
-                updateStats();
-                if (window.renderCharts) window.renderCharts();
+                    renderStudents();
+                    renderLog();
+                    updateStats();
+                    if (window.renderCharts) window.renderCharts();
 
-            } catch (err) {
-                console.error("Error deleting all data:", err);
-                alert("حدث خطأ أثناء محاولة الحذف: " + err.message);
-            } finally {
-                showLoading(false);
-            }
-        };
-    });
+                } catch (err) {
+                    console.error("Error deleting all data:", err);
+                    alert("حدث خطأ أثناء محاولة الحذف: " + err.message);
+                } finally {
+                    showLoading(false);
+                }
+            };
+        });
     })();
 });

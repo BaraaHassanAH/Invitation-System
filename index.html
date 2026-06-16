@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -19,114 +18,17 @@
   <link rel="shortcut icon" href="favicon.ico">
   <link rel="apple-touch-icon" href="favicon-192.png">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <style>
-    .index-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
-      background-image:
-        radial-gradient(ellipse 60% 50% at 30% 10%, rgba(79, 134, 247, 0.16) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 40% at 80% 90%, rgba(26, 86, 219, 0.1) 0%, transparent 55%);
-    }
-
-    .index-card {
-      background: white;
-      border-radius: 20px;
-      padding: 40px 36px;
-      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
-      border: 1px solid #dde4f0;
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
-      animation: fadeUp 0.5s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .index-card::before {
-      content: '';
-      position: absolute;
-      top: 0; right: 0; left: 0;
-      height: 5px;
-      background: linear-gradient(90deg, #1a56db 0%, #f59e0b 50%, #1a56db 100%);
-    }
-
-    .index-logo-wrap {
-      width: 72px;
-      height: 72px;
-      border-radius: 18px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 18px;
-      box-shadow: 0 8px 24px rgba(26, 86, 219, 0.3);
-    }
-
-    .index-title {
-      font-size: 21px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #0f172a 20%, #1341b0 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      margin-bottom: 4px;
-    }
-
-    .index-sub {
-      font-size: 13px;
-      color: #64748b;
-      margin-bottom: 28px;
-    }
-
-    .login-submit {
-      width: 100%;
-      padding: 13px;
-      font-size: 14.5px;
-      margin-top: 8px;
-      justify-content: center;
-      letter-spacing: 0.2px;
-    }
-
-    .login-footer {
-      font-size: 11px;
-      color: #94a3b8;
-      margin-top: 18px;
-      text-align: center;
-    }
-
-    .login-submit:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-
-    .login-spinner {
-      width: 16px;
-      height: 16px;
-      border: 2.5px solid rgba(255, 255, 255, 0.4);
-      border-top-color: #fff;
-      border-radius: 50%;
-      display: inline-block;
-      animation: loginSpin 0.7s linear infinite;
-      margin-left: 8px;
-    }
-
-    @keyframes loginSpin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
 </head>
-
 <body>
   <div class="index-wrapper">
     <div class="index-card">
-      <div class="index-logo-wrap"><img src="logo.png" alt="شعار النظام" class="index-logo-img"></div>
+      <div class="index-logo-wrap">
+        <img src="logo.png" alt="شعار النظام" class="index-logo-img">
+      </div>
       <h2 class="index-title">نظام الدعوات الإلكترونية</h2>
       <p class="index-sub">يرجى تسجيل الدخول للمتابعة إلى لوحة التحكم</p>
 
-      <div class="error-msg" id="error-message">❌ البريد الإلكتروني أو كلمة المرور غير صحيحة!</div>
+      <div class="error-msg" id="error-message"></div>
 
       <form id="index-form" onsubmit="handleLogin(event)">
         <div class="form-group">
@@ -152,7 +54,6 @@
       ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       : null;
 
-    // إذا كان المستخدم مسجّل الدخول بالفعل (جلسة فعّالة)، انتقل مباشرة
     if (supabaseClient) {
       supabaseClient.auth.getSession().then(({ data: { session } }) => {
         if (session) window.location.replace('invitation_system_1.html');
@@ -169,16 +70,12 @@
 
     async function handleLogin(event) {
       event.preventDefault();
-
-      if (!supabaseClient) {
-        alert('تعذر الاتصال بخدمة المصادقة. تحقق من الإنترنت.');
-        return;
-      }
+      if (!supabaseClient) { alert('تعذر الاتصال بخدمة المصادقة.'); return; }
 
       const email = document.getElementById('username').value.trim();
-      const pass = document.getElementById('password').value;
+      const pass  = document.getElementById('password').value;
       const errMsg = document.getElementById('error-message');
-      const btn = document.getElementById('login-btn');
+      const btn    = document.getElementById('login-btn');
 
       errMsg.style.display = 'none';
       btn.disabled = true;
@@ -200,5 +97,4 @@
     }
   </script>
 </body>
-
 </html>

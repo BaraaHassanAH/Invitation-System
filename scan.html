@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -19,117 +18,29 @@
   <link rel="shortcut icon" href="favicon.ico">
   <link rel="apple-touch-icon" href="favicon-192.png">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-  <style>
-    .scan-body {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      transition: background 0.5s ease;
-      background-image:
-        radial-gradient(ellipse 60% 50% at 30% 10%, rgba(79, 134, 247, 0.16) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 40% at 80% 90%, rgba(26, 86, 219, 0.1) 0%, transparent 55%);
-    }
-
-    .scan-body.state-success {
-      background: linear-gradient(135deg, #05231f 0%, #0a3d2e 100%);
-    }
-
-    .scan-body.state-duplicate {
-      background: linear-gradient(135deg, #3c2305 0%, #5a3a08 100%);
-    }
-
-    .scan-body.state-invalid {
-      background: linear-gradient(135deg, #3c0808 0%, #5a1010 100%);
-    }
-
-    .scan-card {
-      background: white;
-      border-radius: 24px;
-      padding: 40px 32px;
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
-      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .scan-brand {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .scan-spinner {
-      width: 54px;
-      height: 54px;
-      margin: 0 auto 16px;
-      border: 4px solid var(--border);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .scan-retry {
-      display: inline-block;
-      margin-top: 22px;
-      padding: 11px 24px;
-      border: none;
-      border-radius: var(--radius-md);
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: white;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-    .scan-retry:hover { filter: brightness(1.08); }
-
-    .scan-footer {
-      text-align: center;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.55);
-      margin-top: 18px;
-    }
-    .state-loading .scan-footer { color: var(--text-light); }
-  </style>
 </head>
 
 <body class="scan-body state-loading" id="scan-body">
-
   <div style="width:100%;">
     <div class="scan-card" id="scan-card">
-      <div class="scan-brand"><img src="logo.png" alt="" class="scan-brand-logo"> نظام الدعوات الإلكترونية</div>
-
-      <div id="scan-icon">
-        <div class="scan-spinner"></div>
+      <div class="scan-brand">
+        <img src="logo.png" alt="" class="scan-brand-logo">
+        نظام الدعوات الإلكترونية
       </div>
 
+      <div id="scan-icon"><div class="scan-spinner"></div></div>
+
       <div class="result-status-text" id="scan-status">جاري التحقق من رمز الدعوة...</div>
-      <div class="result-student-name" id="scan-name" style="display:none;">—</div>
-      <div class="result-student-id" id="scan-sid" style="display:none;">—</div>
-      <div id="scan-inv" class="result-inv-badge" style="display:none;">—</div>
-      <div class="result-time" id="scan-time" style="display:none;">—</div>
-      <div class="result-code" id="scan-code"
-        style="font-size:11px; color:var(--text-muted); margin-top:8px; font-family:monospace; display:none;">—</div>
+      <div class="result-student-name" id="scan-name"   style="display:none;">—</div>
+      <div class="result-student-id"   id="scan-sid"    style="display:none;">—</div>
+      <div id="scan-inv" class="result-inv-badge"       style="display:none;">—</div>
+      <div class="result-time"         id="scan-time"   style="display:none;">—</div>
+      <div class="result-code"         id="scan-code"   style="display:none;">—</div>
 
       <button class="scan-retry" id="scan-retry-btn" style="display:none;" onclick="location.reload()">
         🔄 إعادة المحاولة
       </button>
     </div>
-
     <p class="scan-footer">يتم تسجيل الحضور سحابياً ومباشرة عبر النظام</p>
   </div>
 
@@ -144,15 +55,14 @@
     const el = id => document.getElementById(id);
 
     function setState(state, opts = {}) {
-      const body = el('scan-body');
-      body.className = 'scan-body state-' + state;
+      el('scan-body').className = 'scan-body state-' + state;
 
-      const icons = { success: '✅', duplicate: '⚠️', invalid: '❌' };
+      const icons     = { success: '✅', duplicate: '⚠️', invalid: '❌' };
       const statusCls = { success: 'ok', duplicate: 'dup', invalid: 'bad' };
-      const statusTx = {
-        success: 'تم تسجيل حضورك بنجاح',
+      const statusTx  = {
+        success:   'تم تسجيل حضورك بنجاح',
         duplicate: 'هذه الدعوة مستخدمة مسبقاً',
-        invalid: opts.message || 'رمز الدعوة غير صالح أو غير موجود'
+        invalid:   opts.message || 'رمز الدعوة غير صالح أو غير موجود'
       };
 
       if (state === 'loading') return;
@@ -166,28 +76,21 @@
       if (state !== 'invalid') {
         el('scan-name').style.display = 'block';
         el('scan-name').textContent = opts.name || '—';
-
         el('scan-sid').style.display = 'block';
         el('scan-sid').textContent = 'رقم الطالب: ' + (opts.studentId || '—');
-
         const invEl = el('scan-inv');
         invEl.style.display = 'inline-block';
         invEl.textContent = 'دعوة ' + (opts.invNum === 1 ? 'الأولى' : 'الثانية');
         invEl.className = 'result-inv-badge ' + (opts.invNum === 1 ? 'badge-info' : 'badge-success');
-
-        const timeEl = el('scan-time');
-        timeEl.style.display = 'block';
-        timeEl.textContent = state === 'duplicate'
+        el('scan-time').style.display = 'block';
+        el('scan-time').textContent = state === 'duplicate'
           ? 'سبق تسجيل الحضور في: ' + (opts.usedAt || '—')
           : 'وقت الدخول: ' + new Date().toLocaleTimeString('ar-SA');
       }
-
       if (opts.code) {
-        const codeEl = el('scan-code');
-        codeEl.style.display = 'block';
-        codeEl.textContent = opts.code;
+        el('scan-code').style.display = 'block';
+        el('scan-code').textContent = opts.code;
       }
-
       if (state === 'invalid') {
         el('scan-retry-btn').style.display = 'inline-block';
       }
@@ -197,59 +100,28 @@
       const params = new URLSearchParams(window.location.search);
       const code = (params.get('code') || '').trim();
 
-      if (!code) {
-        setState('invalid', { message: 'لم يتم تحديد رمز دعوة في الرابط' });
-        return;
-      }
-
-      if (!supabaseClient) {
-        setState('invalid', { message: 'تعذر الاتصال بقاعدة البيانات' });
-        return;
-      }
+      if (!code) { setState('invalid', { message: 'لم يتم تحديد رمز دعوة في الرابط' }); return; }
+      if (!supabaseClient) { setState('invalid', { message: 'تعذر الاتصال بقاعدة البيانات' }); return; }
 
       try {
         const { data, error } = await supabaseClient.rpc('check_in_invitation', { p_code: code });
 
-        if (error || !data || !data.status) {
-          setState('invalid', { code });
-          return;
+        if (error || !data || !data.status || data.status === 'invalid') {
+          setState('invalid', { code }); return;
         }
-
-        if (data.status === 'invalid') {
-          setState('invalid', { code });
-          return;
-        }
-
         if (data.status === 'duplicate') {
-          const usedAt = data.used_at
-            ? new Date(data.used_at).toLocaleTimeString('ar-SA')
-            : null;
-
           setState('duplicate', {
-            name: data.name,
-            studentId: data.student_id,
-            invNum: data.inv_num,
-            usedAt,
-            code
-          });
-          return;
+            name: data.name, studentId: data.student_id, invNum: data.inv_num,
+            usedAt: data.used_at ? new Date(data.used_at).toLocaleTimeString('ar-SA') : null, code
+          }); return;
         }
-
-        setState('success', {
-          name: data.name,
-          studentId: data.student_id,
-          invNum: data.inv_num,
-          code
-        });
-
+        setState('success', { name: data.name, studentId: data.student_id, invNum: data.inv_num, code });
       } catch (e) {
-        console.error('خطأ في التحقق من الدعوة:', e);
+        console.error(e);
         setState('invalid', { message: 'تعذر الاتصال بالخادم، تحقق من الإنترنت', code });
       }
     }
-
     run();
   </script>
 </body>
-
 </html>
